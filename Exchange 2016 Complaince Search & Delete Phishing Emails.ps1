@@ -2,13 +2,17 @@
 # Colin Edwards / @EdwardsCP
 # September 2018
 #--------------------------------------------------
-# Usage:
-# User is prompted for the Subject, Sender, and Date Range,
-# or combinations of those.  
+# Prerequisites: Script must be run from Exchange Management Shell by a User with the Exchange Discovery Management Role
+#
+# Usage: Execute the script from within EMS
+#
+# The user is prompted to search using various combinations of the Subject, Sender Address, and Date Range.
 # The script will create and execute a Compliance Search.
-# User then has the option to view details of the search results,
-# delete the Items found by the Search, or Delete the search
-# and exit.
+# The user then has the option to view details of the search results, delete the Items found by the Search, or Delete the search and exit.
+#
+#
+# The script currently searches all Exchange Locations, which might be too wide depending on your environment.
+#
 
 
 #Function to show the full action menu of options
@@ -72,7 +76,7 @@ Function ShowMenu{
 }
 
 
-#Function for SearchType Menu Options
+#Function for SearchType Menu Options Display
 Function SearchTypeOptions {
 	Write-Host "==============================================================" -ForegroundColor Yellow
 	Write-Host "== Exchange 2016 Compliance Search & Delete Phishing Emails ==" -ForegroundColor Yellow
@@ -84,7 +88,7 @@ Function SearchTypeOptions {
 	Write-Host "------------------------!!!Warning!!!-------------------------" -ForegroundColor Red
 	Write-Host "If you use this script to delete emails, there is no automatic" -ForegroundColor Red
 	Write-Host "method to undo the removal of those emails.                   " -ForegroundColor Red
-	Write-Host "USE ARE YOUR OWN RISK!                                        " -ForegroundColor Red
+	Write-Host "USE AT YOUR OWN RISK!                                         " -ForegroundColor Red
 	Write-Host "--------------------------------------------------------------" -ForegroundColor Red
 	Write-Host "--------------------------------------------------------------" -ForegroundColor Red
 	Write-Host "                                                              " -ForegroundColor Yellow
@@ -134,9 +138,22 @@ Function SearchTypeMenu{
 				ComplianceSearch
 			}
 			'5'{
-				$Sender = Read-Host -Prompt 'Please enter the exact Sender (From:) address of the Email you would like to search for'
-				$ContentMatchQuery = "From:$Sender"
-				ComplianceSearch
+				Do {
+					Write-Host "WARNING: Are you sure you want to search based on only Sender Address?" -ForegroundColor Red
+					Write-Host "WARNING: This has the potential to return many results and delete many emails." -ForegroundColor Red
+					$DangerousSearch = Read-Host -Prompt 'After reading the warning above, would you like to proceed? [Y]es or [Q]uit'
+					switch ($DangerousSearch){
+						'Y'{
+							$Sender = Read-Host -Prompt 'Please enter the exact Sender (From:) address of the Email you would like to search for'
+							$ContentMatchQuery = "From:$Sender"
+							ComplianceSearch
+						}
+						'q'{
+							Exit
+						}
+					}
+				}
+				until ($DangerousSearch -eq 'q')
 			}
 			'q'{
 				Exit
@@ -178,12 +195,12 @@ Function ComplianceSearch {
 	}
 	until ($ThisSearch.status -match "Completed")
 
-	Write-Host ===========================================================================
+	Write-Host "==========================================================================="
 	Write-Host The search returned...
 	Write-Host $ThisSearch.Items Items -ForegroundColor Yellow
 	Write-Host That match the query...
 	Write-Host $ContentMatchQuery -ForegroundColor Yellow
-	Write-Host ===========================================================================
+	Write-Host "==========================================================================="
 
 	ShowMenu
 }
