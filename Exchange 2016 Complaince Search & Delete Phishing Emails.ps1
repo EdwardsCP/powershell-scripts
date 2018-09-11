@@ -3,7 +3,8 @@
 # September 2018
 #--------------------------------------------------
 # Usage:
-# User is prompted for the exact Subject and Sender.
+# User is prompted for the Subject, Sender, and Date Range,
+# or combinations of those.  
 # The script will create and execute a Compliance Search.
 # User then has the option to view details of the search results,
 # delete the Items found by the Search, or Delete the search
@@ -92,6 +93,7 @@ Function SearchTypeOptions {
 	Write-Host "[2] Subject and Date Range"
 	Write-Host "[3] Subject and Sender Address"
 	Write-Host "[4] Subject Only"
+	Write-Host "[5] Sender Address Only (DANGEROUS)"
 	Write-Host "[Q] Quit"
 }
 
@@ -99,7 +101,7 @@ Function SearchTypeOptions {
 Function SearchTypeMenu{
 	Do {	
 		SearchTypeOptions
-		$SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and press Enter'
+		$SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, 3, 4, 5 or Q) and press Enter'
 		switch ($SearchType){
 			'1'{
 				$Subject = Read-Host -Prompt 'Please enter the exact Subject of the Email you would like to search for'
@@ -131,7 +133,11 @@ Function SearchTypeMenu{
 				$ContentMatchQuery = "Subject:'$Subject'"
 				ComplianceSearch
 			}
-
+			'5'{
+				$Sender = Read-Host -Prompt 'Please enter the exact Sender (From:) address of the Email you would like to search for'
+				$ContentMatchQuery = "From:$Sender"
+				ComplianceSearch
+			}
 			'q'{
 				Exit
 			}
@@ -142,9 +148,24 @@ Function SearchTypeMenu{
 
 
 Function ComplianceSearch {
-	#Set Variables, prompt user for input
-	$SearchName = "Remove $Subject Phishing Message"
-	
+	#Set SearchName based on SearchType
+	switch ($SearchType){
+			'1'{
+				$SearchName = "Remove Subject [$Subject] Sender [$Sender] DateRange [$DateRange] Phishing Message"
+			}
+			'2'{
+				$SearchName = "Remove Subject [$Subject] DateRange [$DateRange] Phishing Message"
+			}
+			'3'{
+				$SearchName = "Remove Subject [$Subject] Sender [$Sender] Phishing Message"
+			}
+			'4'{
+				$SearchName = "Remove Subject [$Subject] Phishing Message"
+			}
+			'5'{
+				$SearchName = "Remove Sender [$Sender] Phishing Message"
+			}
+	}
 	#Create and Execute a New Compliance Search based on the user set Variables
 	New-ComplianceSearch -Name "$SearchName" -ExchangeLocation all -ContentMatchQuery $ContentMatchQuery
 	Start-ComplianceSearch -Identity "$SearchName"
