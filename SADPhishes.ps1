@@ -44,9 +44,13 @@ Function ShowMenu{
 			}
 			
 			'2'{
-			New-ComplianceSearchAction -SearchName "$SearchName" -Purge -PurgeType SoftDelete
 			$PurgeSuffix = "_purge"
 			$PurgeName = $SearchName + $PurgeSuffix
+			Write-Host "==========================================================================="
+			Write-Host "Creating a new Compliance Search Purge Action with the name..."
+			Write-Host $PurgeName -ForegroundColor Yellow
+			Write-Host "==========================================================================="
+			New-ComplianceSearchAction -SearchName "$SearchName" -Purge -PurgeType SoftDelete
 				do{
 				$ThisPurge = Get-ComplianceSearchAction -Identity $PurgeName
 				Start-Sleep 2
@@ -65,6 +69,7 @@ Function ShowMenu{
 			Read-Host -Prompt "Press Enter to exit"
 			Exit
 			}
+			
 			'q'{
 			Remove-ComplianceSearch -Identity $SearchName
 			Write-Host "The search has been deleted." -ForegroundColor Red
@@ -226,9 +231,16 @@ Function ComplianceSearch {
 			}
 	}
 	#Create and Execute a New Compliance Search based on the user set Variables
+	Write-Host "==========================================================================="
+	Write-Host "Creating a new Compliance Search with the name..."
+	Write-Host $SearchName -ForegroundColor Yellow
+	Write-Host "...using the query..."
+	Write-Host $ContentMatchQuery -ForegroundColor Yellow
+	Write-Host "==========================================================================="
+	
 	New-ComplianceSearch -Name "$SearchName" -ExchangeLocation all -ContentMatchQuery $ContentMatchQuery
 	Start-ComplianceSearch -Identity "$SearchName"
-	
+	Get-ComplianceSearch -Identity "$SearchName"
 	#Display status, then results of Compliance Search
 	do{
 		$ThisSearch = Get-ComplianceSearch -Identity $SearchName
