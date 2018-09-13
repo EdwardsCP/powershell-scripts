@@ -13,12 +13,16 @@
 #
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
-# The script currently searches all Exchange Locations, which might be too wide depending on your environment. Look for a future version of this script to allow limiting search targets based on Distribution Group or Mail-Enabled Security Group membership.
 # 
+#=================
+# Version 1.0.2
+# Modified ComplianceSearch function to add a TimeStamp to SearchName to make it unique if an identical search is re-run.
+# Modified ThisSearchMailboxCount function to display a warning if the Compliance search returns 500 source mailboxes.
 #=================
 # Version 1.0.1
 # Added ThisSearchMailboxCount function to display the number of mailboxes and a list of email addresses with Compliance Search Hits
 # Added ExchangeSearchLocationOptions and ExchangeSearchLocationMenu functions so the user can choose to search all Exchange Locations, or limit the search targets based on the Email Address associated with a Mailbox, Distribution Group, or Mail-Enabled Security Group
+
 
 
 #Function to show the full action menu of options
@@ -125,10 +129,10 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                              ________________________/ |  "
-	Write-Host "                                                             |@EdwardsCP v1.0.1 2018___/   "
+	Write-Host "                                                             |@EdwardsCP v1.0.2 2018___/   "
 	Write-Host "================================================================================================"
 	Write-Host "===============================================================" -ForegroundColor Yellow
-	Write-Host "== Exchange 2016 Compliance Search & Destroy Phishing Emails ==" -ForegroundColor Yellow
+	Write-Host "== Exchange 2016 Compliance (S)earch (A)nd (D)estroy Phishes ==" -ForegroundColor Yellow
 	Write-Host "===============================================================" -ForegroundColor Yellow
 	Write-Host "                                                               " -ForegroundColor Yellow
 	Write-Host "---------------------------------------------------------------" -ForegroundColor Red
@@ -250,21 +254,31 @@ Function SearchTypeMenu{
 #Function to count and list Mailboxes with Search Hits.  Code mostly taken from a MS TechNet article.
 Function ThisSearchMailboxCount {
 	$ThisSearchResults = $ThisSearch.SuccessResults;
-		if (($ThisSearch.Items -le 0) -or ([string]::IsNullOrWhiteSpace($ThisSearchResults)))
-			{
+	if (($ThisSearch.Items -le 0) -or ([string]::IsNullOrWhiteSpace($ThisSearchResults))){
                Write-Host "!!!The Compliance Search didn't return any useful results!!!" -ForegroundColor Red
-			}
+	}
 	$mailboxes = @() #create an empty array for mailboxes
 	$ThisSearchResultsLines = $ThisSearchResults -split '[\r\n]+'; #Split up the Search Results at carriage return and line feed
 	foreach ($ThisSearchResultsLine in $ThisSearchResultsLines){
-		if ($ThisSearchResultsLine -match 'Location: (\S+),.+Item count: (\d+)' -and $matches[2] -gt 0){#If the Search Results Line matches the regex, and $matches[2] (the value of Item count: n) is greater than 0)
-			$mailboxes += $matches[1]; # Add the Location: (email address) for that Search Results Line to the $mailboxes array
+		# If the Search Results Line matches the regex, and $matches[2] (the value of "Item count: n") is greater than 0)
+		if ($ThisSearchResultsLine -match 'Location: (\S+),.+Item count: (\d+)' -and $matches[2] -gt 0){ 
+			# Add the Location: (email address) for that Search Results Line to the $mailboxes array
+			$mailboxes += $matches[1]; 
 		}
 	}
 	Write-Host "Number of mailboxes that have Search Hits..."
 	Write-Host $mailboxes.Count -ForegroundColor Yellow
 	Write-Host "List of mailboxes that have Search Hits..."
 	write-Host $mailboxes -ForegroundColor Yellow
+	if ($mailboxes.Count -gt 499) {
+		Write-Host "============WARNING - There are 500 or more Mailboxes with results!============" -ForegroundColor Red
+		Write-Host "Microsoft's Compliance Search can search everywhere, but only returns the top" -ForegroundColor Red
+		Write-Host "500 Mailboxes with the most hits that match the search!" -ForegroundColor Red
+		Write-Host " " 
+		Write-Host "If you use this search to delete Email Items, you will need to run the same" -ForegroundColor Red
+		Write-Host "query again to return more mailboxes if there are more than 500 with hits." -ForegroundColor Red
+		Read-Host -Prompt "Please press Enter after reading the warning above."
+}
 }
 
 Function ComplianceSearch {
@@ -286,7 +300,9 @@ Function ComplianceSearch {
 				$SearchName = "Remove Sender [$Sender] ExchangeLocation [$ExchangeLocation] Phishing Message"
 			}
 	}
-	#Create and Execute a New Compliance Search based on the user set Variables
+	# Timestamp the SearchName (to make it unique), then Create and Execute a New Compliance Search based on the user set Variables
+	$TimeStamp = Get-Date -Format o | foreach {$_ -replace ":", "."}
+	$SearchName = $SearchName + " " + $TimeStamp
 	Write-Host "==========================================================================="
 	Write-Host "Creating a new Compliance Search with the name..."
 	Write-Host $SearchName -ForegroundColor Yellow
@@ -312,6 +328,7 @@ Function ComplianceSearch {
 	Write-Host $ContentMatchQuery -ForegroundColor Yellow
 	ThisSearchMailboxCount
 	Write-Host "==========================================================================="
+	
 
 	ShowMenu
 }
