@@ -424,6 +424,23 @@ Function ComplianceSearch {
 	Write-Host "...using the query..."
 	Write-Host $ContentMatchQuery -ForegroundColor Yellow
 	Write-Host "==========================================================================="
+	#If a Subject was specified, warn the user about Microsoft returning results with additional text before or after the subject that was defined.
+	if ($Subject -ne $null){
+		Write-Host "===========================================================================" -ForegroundColor Yellow
+		Write-Host "Warning: Your Compliance Search contained a Subject [$Subject]."             -ForegroundColor Yellow
+		Write-Host "When you use the Subject property in a query, the search returns all"        -ForegroundColor Yellow
+		Write-Host "messages in which the subject line contains the text you are searching for." -ForegroundColor Yellow
+		Write-Host "The query doesn't only return exact matches.  For example, if you search"    -ForegroundColor Yellow
+		Write-Host "(Subject:SADPhishes), your results will include messages with the subject"   -ForegroundColor Yellow
+		Write-Host "'SADPhishes', but also messages with the subjects 'SADPhishes is good!' and" -ForegroundColor Yellow
+		Write-Host "'RE: Screw SADPhishes. it sucks!'"                                           -ForegroundColor Yellow
+		Write-Host " "                                                                           -ForegroundColor Yellow
+		Write-Host "This is just how the Microsoft Exchange Content Search works."               -ForegroundColor Yellow
+		Write-Host " "                                                                           -ForegroundColor Yellow
+		Write-Host "Please take this into consideration when using the Search Results."          -ForegroundColor Yellow
+		Write-Host "===========================================================================" -ForegroundColor Yellow
+		Read-Host -Prompt "Please press Enter after reading the warning above."
+	}
 	
 	New-ComplianceSearch -Name "$SearchName" -ExchangeLocation $ExchangeLocation -ContentMatchQuery $ContentMatchQuery
 	Start-ComplianceSearch -Identity "$SearchName"
