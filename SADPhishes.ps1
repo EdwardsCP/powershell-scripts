@@ -7,13 +7,19 @@
 #
 # Usage: Execute the script from within EMS
 #
-# The user is prompted to search using various combinations of the Subject, Sender Address, and Date Range.
+# The user is prompted to search using various combinations of the Subject, Sender Address, Date Range, and Attachment Names.
+# The user selects to search either All Exchange Locations, or specify the Email Address associated with a specific MailBox or Group
 # The script will create and execute a Compliance Search.
 # The user then has the option to view details of the search results, delete the Items found by the Search, or Delete the search and exit.
 #
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
-# 
+#=================
+#Version 1.0.3
+# Added AttachmentNameOptions and AttachmentNameMenu functions to search for emails with a specific Attachment name. 
+# Added an option for Attachment Name to the workflow of all searches
+# Added an Attachment Name Only search option.
+# Added an option for a Pre-Built Suspicious Attachment Types Search, and new functions in that workflow that don't allow for delete. This is for info-gathering only.
 #=================
 # Version 1.0.2
 # Modified ComplianceSearch function to add a TimeStamp to SearchName to make it unique if an identical search is re-run.
@@ -22,13 +28,14 @@
 # Version 1.0.1
 # Added ThisSearchMailboxCount function to display the number of mailboxes and a list of email addresses with Compliance Search Hits
 # Added ExchangeSearchLocationOptions and ExchangeSearchLocationMenu functions so the user can choose to search all Exchange Locations, or limit the search targets based on the Email Address associated with a Mailbox, Distribution Group, or Mail-Enabled Security Group
+#=================
 
 
 
 #Function to show the full action menu of options
 Function MenuOptions{
 	Write-Host How would you like to proceed?
-	Write-Host "[1] Display the Detailed (Format-List) view of the search results so you can review the location of these Items."
+	Write-Host "[1] Display the Detailed (Format-List) view of the search results."
 	Write-Host "[2] Delete the Items (move them to Deleted Recoverable Items)."
 	Write-Host "[3] Delete this search and Exit."
 	}
@@ -90,7 +97,54 @@ Function ShowMenu{
 	Until ($MenuChoice -eq 'q')
 }
 
+#Function to show the No Delete action menu of options (for Suspicious Attachment Types Search)
+Function NoDeleteMenuOptions{
+	Write-host "===================================================="  -ForegroundColor Red
+	Write-Host "Take the Search Results above and Investigate." -ForegroundColor Red
+	Write-host "===================================================="  -ForegroundColor Red
+	Write-Host How would you like to proceed?
+	Write-Host "[1] Display the Detailed (Format-List) view of the search results."
+	Write-Host "[2] Delete this search and Exit."
+	}
+	
+#Function for No Delete menu (for Suspicious Attachment Types Search)
+Function ShowNoDeleteMenu{
+	Do{
+		NoDeleteMenuOptions
+		$NoDeleteMenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1 or 2), and press Enter'
+		switch ($NoDeleteMenuChoice){
+			'1'{
+			$ThisSearch | Format-List
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-Host "Please review the output above" -ForegroundColor Red
+			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			ShowNoDeleteMenu
+			}
+			
+			'2'{
+			Remove-ComplianceSearch -Identity $SearchName
+			Write-Host "The search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to exit"
+			Exit
+			}
+			
+			'q'{
+			Remove-ComplianceSearch -Identity $SearchName
+			Write-Host "The search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to exit"
+			Exit
+			}
+		}
+	}
+	Until ($MenuChoice -eq 'q')
+}
 
+# Who doesn't like gratuitous ascii art?
 Function DisplayBanner {
 	Write-Host ":(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><"
 	Write-Host ":(:(:(:(:(:(:                      (:(:(:(:(:(:(<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><"
@@ -129,7 +183,7 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                              ________________________/ |  "
-	Write-Host "                                                             |@EdwardsCP v1.0.2 2018___/   "
+	Write-Host "                                                             |@EdwardsCP v1.0.3 2018___/   "
 	Write-Host "================================================================================================"
 	Write-Host "===============================================================" -ForegroundColor Yellow
 	Write-Host "== Exchange 2016 Compliance (S)earch (A)nd (D)estroy Phishes ==" -ForegroundColor Yellow
@@ -154,7 +208,38 @@ Function SearchTypeOptions {
 	Write-Host "[3] Subject and Sender Address"
 	Write-Host "[4] Subject Only"
 	Write-Host "[5] Sender Address Only (DANGEROUS)"
+	Write-Host "[6] Attachment Name Only"
+	Write-Host "[7] Pre-Built Suspicious Attachment Types Search"
 	Write-Host "[Q] Quit"
+}
+
+#Function for AttachmentName Menu Options Display
+Function AttachmentNameOptions {
+	Write-Host "Do you want to search for EMails containing an Attachment with a specific File Name?" -ForegroundColor Yellow
+	Write-Host "[1] No"
+	Write-Host "[2] Yes"
+	Write-Host "[Q] Quit"
+}
+
+#Function for AttachmentName Menu
+Function AttachmentNameMenu {
+	Do{
+		AttachmentNameOptions
+		$AttachmentNameSelection = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and Press Enter'
+		switch ($AttachmentNameSelection){
+			'1'{
+				ExchangeSearchLocationMenu
+			}
+			'2'{
+				$AttachmentName = Read-Host -Prompt 'Please enter the exact File Name of the Attachment you want to search for (i.e. SADPhishes.ps1) and Press Enter'
+				ExchangeSearchLocationMenu
+			}
+			'q'{
+			Exit
+			}
+		}
+	}
+	until ($AttachmentNameSelection -eq 'q')
 }
 
 #Function for ExchangeSearchLocation Menu Options Display
@@ -193,7 +278,7 @@ Function ExchangeSearchLocationMenu {
 Function SearchTypeMenu{
 	Do {	
 		SearchTypeOptions
-		$SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, 3, 4, 5 or Q) and press Enter'
+		$SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, 3, 4, 5, 6, 7 or Q) and press Enter'
 		switch ($SearchType){
 			'1'{
 				$Subject = Read-Host -Prompt 'Please enter the exact Subject of the Email you would like to search for'
@@ -203,7 +288,7 @@ Function SearchTypeMenu{
 				$DateRangeSeparator = ".."
 				$DateRange = $DateStart + $DateRangeSeparator + $DateEnd
 				$ContentMatchQuery = "(Received:$DateRange) AND (From:$Sender) AND (Subject:'$Subject')"
-				ExchangeSearchLocationMenu
+				AttachmentNameMenu
 			}
 			'2'{
 				$Subject = Read-Host -Prompt 'Please enter the exact Subject of the Email you would like to search for'
@@ -212,18 +297,18 @@ Function SearchTypeMenu{
 				$DateRangeSeparator = ".."
 				$DateRange = $DateStart + $DateRangeSeparator + $DateEnd
 				$ContentMatchQuery = "(Received:$DateRange) AND (Subject:'$Subject')"
-				ExchangeSearchLocationMenu
+				AttachmentNameMenu
 			}
 			'3'{
 				$Subject = Read-Host -Prompt 'Please enter the exact Subject of the Email you would like to search for'
 				$Sender = Read-Host -Prompt 'Please enter the exact Sender (From:) address of the Email you would like to search for'
 				$ContentMatchQuery = "(From:$Sender) AND (Subject:'$Subject')"
-				ExchangeSearchLocationMenu
+				AttachmentNameMenu
 			}
 			'4'{
 				$Subject = Read-Host -Prompt 'Please enter the exact Subject of the Email you would like to search for'
 				$ContentMatchQuery = "Subject:'$Subject'"
-				ExchangeSearchLocationMenu
+				AttachmentNameMenu
 			}
 			'5'{
 				Do {
@@ -234,7 +319,7 @@ Function SearchTypeMenu{
 						'Y'{
 							$Sender = Read-Host -Prompt 'Please enter the exact Sender (From:) address of the Email you would like to search for'
 							$ContentMatchQuery = "From:$Sender"
-							ExchangeSearchLocationMenu
+							AttachmentNameMenu
 						}
 						'q'{
 							Exit
@@ -242,6 +327,19 @@ Function SearchTypeMenu{
 					}
 				}
 				until ($DangerousSearch -eq 'q')
+			}
+			'6'{
+				$AttachmentName = Read-Host -Prompt 'Please enter the exact File Name of the Attachment you want to search for (i.e. SADPhishes.ps1) and Press Enter'
+				ExchangeSearchLocationMenu
+			}
+			'7'{
+				Write-Host "You have chosen to conduct the SADPhishes Pre-Built Suspicious Attachment Types Search." -ForegroundColor Yellow
+				Write-Host "This search will return a list of Mailboxes that contain Attachments with specific file extensions." -ForegroundColor Yellow
+				Write-Host "This search is a Search-Only option, with no Delete built into the SADPhishes Workflow." -ForegroundColor Yellow
+				Write-Host "Take these results and investigate." -ForegroundColor Yellow
+				Read-Host -Prompt "After you have read the information about this Suspicious Attachment Search, Press Enter to continue."
+				$ContentMatchQuery = "((HasAttachment:true) AND (Attachment:'.ade') OR (Attachment:'.adp') OR (Attachment:'.apk') OR (Attachment:'.bas') OR (Attachment:'.bat') OR (Attachment:'.chm') OR  (Attachment:'.cmd') OR (Attachment:'.com') OR (Attachment:'.cpl') OR (Attachment:'.dll') OR (Attachment:'.exe') OR (Attachment:'.hta') OR (Attachment:'.inf') OR (Attachment:'.iqy') OR (Attachment:'.jar') OR (Attachment:'.js') OR (Attachment:'.jse') OR (Attachment:'.lnk') OR (Attachment:'.msc') OR (Attachment:'.msi') OR (Attachment:'.msp') OR (Attachment:'.mst') OR (Attachment:'.ocx') OR (Attachment:'.pif') OR (Attachment:'.pl') OR (Attachment:'.ps1') OR (Attachment:'.reg') OR (Attachment:'.scr') OR (Attachment:'.sct') OR (Attachment:'.shs') OR (Attachment:'.slk') OR (Attachment:'.sys') OR (Attachment:'.vb') OR (Attachment:'.vbe') OR (Attachment:'.vbs') OR (Attachment:'.wsc') OR (Attachment:'.wsf') OR (Attachment:'.wsh'))"
+				ExchangeSearchLocationMenu
 			}
 			'q'{
 				Exit
@@ -278,7 +376,7 @@ Function ThisSearchMailboxCount {
 		Write-Host "If you use this search to delete Email Items, you will need to run the same" -ForegroundColor Red
 		Write-Host "query again to return more mailboxes if there are more than 500 with hits." -ForegroundColor Red
 		Read-Host -Prompt "Please press Enter after reading the warning above."
-}
+	}
 }
 
 Function ComplianceSearch {
@@ -299,7 +397,24 @@ Function ComplianceSearch {
 			'5'{
 				$SearchName = "Remove Sender [$Sender] ExchangeLocation [$ExchangeLocation] Phishing Message"
 			}
+			'6'{
+				$SearchName = "Remove Exchange Location [$ExchangeLocation] Phishing Message"
+			}
+			'7'{
+				$SearchName = "SADPhishes Pre-Built Suspicious Attachment Types Search Exchange Location [$ExchangeLocation]"
+			}
 	}
+	#If an AttachmentName has been specified, append it to $SearchName and modify $ContentMatchQuery to specify the email has an attachment and what the name is.
+	if ($AttachmentName -ne $null){
+		$SearchName = $SearchName + " with Attachment [" + $AttachmentName + "]"
+		If ($ContentMatchQuery -ne $null){
+		$ContentMatchQuery = "(HasAttachment:true) AND (Attachment:'$AttachmentName') AND " + $ContentMatchQuery
+		}
+		If ($ContentMatchQuery -eq $null){
+		$ContentMatchQuery = "(HasAttachment:true) AND (Attachment:'$AttachmentName')"
+		}
+	}	
+	
 	# Timestamp the SearchName (to make it unique), then Create and Execute a New Compliance Search based on the user set Variables
 	$TimeStamp = Get-Date -Format o | foreach {$_ -replace ":", "."}
 	$SearchName = $SearchName + " " + $TimeStamp
@@ -328,8 +443,11 @@ Function ComplianceSearch {
 	Write-Host $ContentMatchQuery -ForegroundColor Yellow
 	ThisSearchMailboxCount
 	Write-Host "==========================================================================="
+	#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+	if ($SearchType -match "7"){
+		ShowNoDeleteMenu
+	}
 	
-
 	ShowMenu
 }
 
