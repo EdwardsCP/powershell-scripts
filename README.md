@@ -8,7 +8,7 @@ SADPhishes.ps1 is a tool I'm working on to use Exchange 2016's Compliance Search
 
 
 # SADPhishes.ps1 Basic Usage Screenshots
-
+These screenshots are from the initial release.  A bunch has changed, but they still give you a general idea of how this works.
 ![SADPhishes1](/SADPhishes%20Screenshots/sadphishes1.png)
 
 ![SADPhishes2](SADPhishes%20Screenshots/sadphishes2.png)
