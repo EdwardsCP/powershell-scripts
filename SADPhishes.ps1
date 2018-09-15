@@ -15,6 +15,10 @@
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
 #=================
+#Version 1.0.4
+# Added options to create an Exchange In-place eDiscovery Search from the Compliance Search results.
+# The option to execute the eDiscovery search is completely experimental. It knocked Exchange offline during testing. Not recommended in Prod.
+#=================
 #Version 1.0.3
 # Added AttachmentNameOptions and AttachmentNameMenu functions to search for emails with a specific Attachment name. 
 # Added an option for Attachment Name to the workflow of all searches
@@ -32,13 +36,173 @@
 
 
 
+
 #Function to show the full action menu of options
 Function MenuOptions{
 	Write-Host How would you like to proceed?
 	Write-Host "[1] Display the Detailed (Format-List) view of the search results."
 	Write-Host "[2] Delete the Items (move them to Deleted Recoverable Items)."
-	Write-Host "[3] Delete this search and Exit."
+	Write-Host "[3] Create an Exchange In-Place eDiscovery Search from the results."
+	Write-Host "[4] Delete this search and Exit."
 	}
+	
+#Function to show the eDiscovery Search Action menu of options
+Function EDiscoverySearchMenuOptions{
+	Write-host How would you like to proceed?
+	Write-Host "[1] Display the Detailed (Format-List) view of the new In-Place eDiscovery Search."
+	Write-Host "[2] Start the new In-Place eDiscovery Search. (WARNING: EXPERIMENTAL! Not recommended for Production. Known to knock Mailbox Servers Offline!!!)"
+	Write-Host "[3] Delete the new In-Place eDiscovery Search and Exit."
+	}
+
+#Function for the eDiscovery Search Action menu
+Function ShowEDiscoverySearchMenu {
+	EDiscoverySearchMenuOptions
+	$EDiscoverySearchMenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or 3), and press Enter'
+	Switch ($EDiscoverySearchMenuChoice){
+		'1'{
+			$ThisEDiscoverySearch | Format-List
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-Host "Please review the output above" -ForegroundColor Red
+			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			ShowEDiscoverySearchMenu
+		}
+		
+		'2'{
+			Do {
+				Write-Host "WARNING: Executing an In-Place eDiscovery Search created by SADPhishes is EXPERIMENTAL!" -ForegroundColor Red
+				Write-Host "WARNING: This has been known to generate errors and knock the Mailbox Server offline!" -ForegroundColor Red
+				Write-Host "WARNING: This action is NOT recommended for Production use." -ForegroundColor Red
+				Write-Host "You have been warned." -ForegroundColor Red
+				$DangerousEDiscoverySearch = Read-Host -Prompt 'After reading the warning above, would you like to proceed with executing the search? [Y]es or [Q]uit'
+				switch ($DangerousEDiscoverySearch){
+					'Y'{
+						Write-Host "This might blow up.  You're on your own to clean up the mess." -ForegroundColor Red
+						Write-Host "==========================================================================="
+						Write-Host "Starting the new In-Place eDiscovery Search with the name..."
+						Write-Host "$ThisEDiscoverySearchName" -ForegroundColor Yellow
+						Write-Host "...that will search against these mailboxes..."
+						Write-Host $mailboxes -ForegroundColor Yellow
+						Write-Host "...using the Search Query..."
+						Write-Host $ContentMatchQuery -ForegroundColor Yellow
+						Write-Host "==========================================================================="
+						Write-Host "Please wait for the In-Place eDiscovery Search to complete..." -ForegroundColor Yellow
+						Write-Host "==========================================================================="
+						Start-MailboxSearch -Identity $ThisEDiscoverySearchName
+							do{
+							$ThisEDiscoverySearch = Get-MailboxSearch $ThisEDiscoverySearchName
+							Start-Sleep 2
+							Write-Host $ThisEDiscoverySearch.Status
+							}
+							until ($ThisEDiscoverySearch.Status -match "EstimateSucceeded")
+						Write-Host "==========================================================================="
+						Write-Host "The In-Place eDiscovery Search has completed."
+						Write-Host "You can use this URL to Preview the Results..." 
+						Write-Host $ThisEDiscoverySearch.PreviewResultsLink -ForegroundColor Yellow
+						Write-Host "If you need to Copy those results to a Discovery Mailbox, or Export them"
+						Write-Host "to a PST file, please use Exchange Administration Console's Compliance "
+						Write-Host "Management In-Place eDiscovery workflow to proceed with those actions."
+					}
+					'q'{
+						Write-Host "Proceeding to Exit..."
+						Do{
+							Write-Host "==========================================================================="
+							Write-Host "Do you want to Remove the new In-Place eDiscovery Search with the name..."
+							Write-Host "$ThisEDiscoverySearchName" -ForegroundColor Yellow
+							Write-Host "...or do you want to delete it?"
+							Write-Host "[1] Delete the eDiscovery Search and Exit."
+							Write-Host "[2] Exit without deleting."
+							$DangerousEDiscoverySearchQuitChoice = Read-Host -Prompt 'Please enter a selection from the menu (1 or 2) and press Enter.'
+							switch ($DangerousEDiscoverySearchQuitChoice){
+								'1'{
+								Remove-MailboxSearch -Identity $ThisEDiscoverySearchName
+								Exit
+								}
+								'2'{
+								Exit
+								}
+							}
+						}
+						Until ($DangerousEDiscoverySearchQuitChoice -eq '1')
+					}
+				}
+			}
+		
+		until ($DangerousEDiscoverySearch -eq 'q')
+		}
+		
+		'3'{
+			Remove-MailboxSearch -Identity $ThisEDiscoverySearchName
+			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to exit"
+			Exit
+		}
+		
+		'q'{
+			Remove-MailboxSearch -Identity $ThisEDiscoverySearchName
+			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to exit"
+			Exit		
+		}
+	}
+	Until ($EDiscoverySearchMenuChoice -eq 'q')
+}
+	
+#Function to create an eDiscovery Search. Code mostly taken from a MS TechNet article.  
+ Function CreateEDiscoverySearch{
+	$ThisSearchResults = $ThisSearch.SuccessResults;
+	if (($ThisSearch.Items -le 0) -or ([string]::IsNullOrWhiteSpace($ThisSearchResults))){
+               Write-Host "!!!The Compliance Search didn't return any useful results!!!" -ForegroundColor Red
+	}
+	$mailboxes = @() #create an empty array for mailboxes
+	$ThisSearchResultsLines = $ThisSearchResults -split '[\r\n]+'; #Split up the Search Results at carriage return and line feed
+	foreach ($ThisSearchResultsLine in $ThisSearchResultsLines){
+		# If the Search Results Line matches the regex, and $matches[2] (the value of "Item count: n") is greater than 0)
+		if ($ThisSearchResultsLine -match 'Location: (\S+),.+Item count: (\d+)' -and $matches[2] -gt 0){ 
+			# Add the Location: (email address) for that Search Results Line to the $mailboxes array
+			$mailboxes += $matches[1]; 
+		}
+	}
+	#Name the the EDiscoverySearch (MailboxSearch) using the Compliance Search's name, followed by _MBSearch, followed by an integer. increase the integer until you hit a name that doesn't already exist.
+	$EDiscoverySearchName = $SearchName + "_MBSearch";
+	$I = 1;
+	$MailboxSearches = Get-MailboxSearch;
+		while ($true){
+			$found = $false
+			$ThisEDiscoverySearchRun = "$EDiscoverySearchName$I"
+			foreach ($MailboxSearch in $MailboxSearches){
+				if ($MailboxSearch.Name -eq $ThisEDiscoverySearchRun){
+					$found = $true;
+					break;
+				}
+		}
+		if (!$found){
+			break;
+		}
+		$I++;
+		}
+	$ThisEDiscoverySearchName = "$EDiscoverySearchName$i"
+	Write-Host "==========================================================================="
+	Write-Host "Creating a new In-Place eDiscovery Search with the name..."
+	Write-Host "$ThisEDiscoverySearchName" -ForegroundColor Yellow
+	Write-Host "...that will search against these mailboxes..."
+	Write-Host $mailboxes -ForegroundColor Yellow
+	Write-Host "...using the Search Query..."
+	Write-Host $ContentMatchQuery -ForegroundColor Yellow
+	Write-Host "==========================================================================="
+	New-MailboxSearch "$ThisEDiscoverySearchName" -SourceMailboxes $mailboxes -SearchQuery $ContentMatchQuery -EstimateOnly
+	$ThisEDiscoverySearch = Get-MailboxSearch $ThisEDiscoverySearchName
+	do{
+		Start-Sleep 1
+	}
+	Until ($ThisEDiscoverySearch -ne $null)
+	Write-Host "New In-Place eDiscovery Search Successfully Created!" -ForegroundColor Yellow
+	ShowEDiscoverySearchMenu
+}
 
 #Function for full action menu
 Function ShowMenu{
@@ -78,8 +242,11 @@ Function ShowMenu{
 			Read-Host -Prompt "Press Enter to exit"
 			Exit
 			}
-		
+			
 			'3'{
+			CreateEDiscoverySearch
+			}
+			'4'{
 			Remove-ComplianceSearch -Identity $SearchName
 			Write-Host "The search has been deleted." -ForegroundColor Red
 			Read-Host -Prompt "Press Enter to exit"
@@ -104,7 +271,8 @@ Function NoDeleteMenuOptions{
 	Write-host "===================================================="  -ForegroundColor Red
 	Write-Host How would you like to proceed?
 	Write-Host "[1] Display the Detailed (Format-List) view of the search results."
-	Write-Host "[2] Delete this search and Exit."
+	Write-Host "[2] Create an Exchange In-Place eDiscovery Search from the results."
+	Write-Host "[3] Delete this search and Exit."
 	}
 	
 #Function for No Delete menu (for Suspicious Attachment Types Search)
@@ -127,6 +295,10 @@ Function ShowNoDeleteMenu{
 			}
 			
 			'2'{
+			CreateEDiscoverySearch
+			}
+			
+			'3'{
 			Remove-ComplianceSearch -Identity $SearchName
 			Write-Host "The search has been deleted." -ForegroundColor Red
 			Read-Host -Prompt "Press Enter to exit"
@@ -183,7 +355,7 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                              ________________________/ |  "
-	Write-Host "                                                             |@EdwardsCP v1.0.3 2018___/   "
+	Write-Host "                                                             |@EdwardsCP v1.0.4 2018___/   "
 	Write-Host "================================================================================================"
 	Write-Host "===============================================================" -ForegroundColor Yellow
 	Write-Host "== Exchange 2016 Compliance (S)earch (A)nd (D)estroy Phishes ==" -ForegroundColor Yellow
@@ -464,7 +636,7 @@ Function ComplianceSearch {
 	if ($SearchType -match "7"){
 		ShowNoDeleteMenu
 	}
-	
+	#If the search was any other type, show the regular Actions menu that allows Delete.
 	ShowMenu
 }
 
