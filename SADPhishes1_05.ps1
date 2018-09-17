@@ -169,6 +169,11 @@ Function ShowEDiscoverySearchMenu {
 			Remove-MailboxSearch -Identity $ThisEDiscoverySearchName
 			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
 			Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
+			#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+			if ($SearchType -match "7"){
+				ShowNoDeleteMenu
+			}
+			#If the search was any other type, show the regular Actions menu that allows Delete.
 			ShowMenu
 		}
 		
@@ -176,6 +181,11 @@ Function ShowEDiscoverySearchMenu {
 			Remove-MailboxSearch -Identity $ThisEDiscoverySearchName
 			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
 			Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
+			#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+			if ($SearchType -match "7"){
+				ShowNoDeleteMenu
+			}
+			#If the search was any other type, show the regular Actions menu that allows Delete.
 			ShowMenu	
 		}
 	}
@@ -453,6 +463,8 @@ Function SearchTypeOptions {
 	Write-Host "[6] Attachment Name Only"
 	Write-Host "[7] Pre-Built Suspicious Attachment Types Search"
 	Write-Host "[Q] Quit"
+	Write-host "---Debugging Options---"
+	Write-Host "[X] gci: variable"
 	Write-Host "[Y] Print SADPhishesVars"
 	Write-Host "[Z] Clear SADPhishesVars"
 }
@@ -598,6 +610,9 @@ Function SearchTypeMenu{
 				Read-Host -Prompt "Please press Enter to exit."
 				Exit
 			}
+			'x'{
+			gci variable:
+			}
 			'y'{
 			PrintSADPhishesVars
 			}
@@ -739,79 +754,77 @@ Function ComplianceSearch {
 
 #Function to clear all of the Vars set by SADPhishes
 Function ClearSADPhishesVars {
-	Clear-Variable -Name AttachmentName -ErrorAction SilentlyContinue
-	Clear-Variable -Name AttachmentNameSelection -ErrorAction SilentlyContinue
-	Clear-Variable -Name ContentMatchQuery -ErrorAction SilentlyContinue
-	Clear-Variable -Name DangerousEDiscoverySearch -ErrorAction SilentlyContinue
-	Clear-Variable -Name DangerousEDiscoverySearchQuitChoice -ErrorAction SilentlyContinue
-	Clear-Variable -Name DangerousSearch -ErrorAction SilentlyContinue
-	Clear-Variable -Name DateEnd -ErrorAction SilentlyContinue
-	Clear-Variable -Name DateRange -ErrorAction SilentlyContinue
-	Clear-Variable -Name DateRangeSeparator -ErrorAction SilentlyContinue
-	Clear-Variable -Name DateStart -ErrorAction SilentlyContinue
-	Clear-Variable -Name EDiscoverySearchMenuChoice -ErrorAction SilentlyContinue
-	Clear-Variable -Name EDiscoverySearchName -ErrorAction SilentlyContinue
-	Clear-Variable -Name ExchangeLocation -ErrorAction SilentlyContinue
-	Clear-Variable -Name ExchangeSearchLocation -ErrorAction SilentlyContinue
-	Clear-Variable -Name mailboxes -ErrorAction SilentlyContinue
-	Clear-Variable -Name MailboxSearch -ErrorAction SilentlyContinue
-	Clear-Variable -Name MailboxSearches -ErrorAction SilentlyContinue
-	Clear-Variable -Name MenuChoice -ErrorAction SilentlyContinue
-	Clear-Variable -Name NoDeleteMenuChoice -ErrorAction SilentlyContinue
-	Clear-Variable -Name PurgeName -ErrorAction SilentlyContinue
-	Clear-Variable -Name PurgeSuffix -ErrorAction SilentlyContinue
-	Clear-Variable -Name SearchName -ErrorAction SilentlyContinue
-	Clear-Variable -Name SearchType -ErrorAction SilentlyContinue
-	Clear-Variable -Name Sender -ErrorAction SilentlyContinue
-	Clear-Variable -Name Subject -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisEDiscoverySearch -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisEDiscoverySearchName -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisEDiscoverySearchRun -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisPurge -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisSearch -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisSearchResults -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisSearchResultsLine -ErrorAction SilentlyContinue
-	Clear-Variable -Name ThisSearchResultsLines -ErrorAction SilentlyContinue
-	Clear-Variable -Name TimeStamp -ErrorAction SilentlyContinue
+	Clear-Variable -Name AttachmentName
+	Clear-Variable -Name AttachmentNameSelection
+	Clear-Variable -Name ContentMatchQuery
+	Clear-Variable -Name DangerousEDiscoverySearch
+	Clear-Variable -Name DangerousEDiscoverySearchQuitChoice
+	Clear-Variable -Name DangerousSearch
+	Clear-Variable -Name DateEnd
+	Clear-Variable -Name DateRange
+	Clear-Variable -Name DateRangeSeparator
+	Clear-Variable -Name DateStart
+	Clear-Variable -Name EDiscoverySearchMenuChoice
+	Clear-Variable -Name EDiscoverySearchName
+	Clear-Variable -Name ExchangeLocation
+	Clear-Variable -Name ExchangeSearchLocation
+	Clear-Variable -Name mailboxes
+	Clear-Variable -Name MailboxSearch
+	Clear-Variable -Name MailboxSearches
+	Clear-Variable -Name MenuChoice
+	Clear-Variable -Name NoDeleteMenuChoice
+	Clear-Variable -Name PurgeName
+	Clear-Variable -Name PurgeSuffix
+	Clear-Variable -Name SearchName
+	Clear-Variable -Name SearchType
+	Clear-Variable -Name Sender
+	Clear-Variable -Name Subject
+	Clear-Variable -Name ThisEDiscoverySearch
+	Clear-Variable -Name ThisEDiscoverySearchName
+	Clear-Variable -Name ThisEDiscoverySearchRun
+	Clear-Variable -Name ThisPurge
+	Clear-Variable -Name ThisSearch
+	Clear-Variable -Name ThisSearchResults
+	Clear-Variable -Name ThisSearchResultsLine
+	Clear-Variable -Name ThisSearchResultsLines
+	Clear-Variable -Name TimeStamp
 }
 
 Function PrintSADPhishesVars {
-	Write-Host $AttachmentName
-	Write-Host $AttachmentNameSelection
-	Write-Host $ContentMatchQuery
-	Write-Host $DangerousEDiscoverySearch
-	Write-Host $DangerousEDiscoverySearchQuitChoice
-	Write-Host $DangerousSearch
-	Write-Host $DateEnd
-	Write-Host $DateRange
-	Write-Host $DateRangeSeparator
-	Write-Host $DateStart
-	Write-Host $EDiscoverySearchMenuChoice
-	Write-Host $EDiscoverySearchName
-	Write-Host $ExchangeLocation
-	Write-Host $ExchangeSearchLocation
-	Write-Host $mailboxes
-	Write-Host $MailboxSearch
-	Write-Host $MailboxSearches
-	Write-Host $MenuChoice
-	Write-Host $NoDeleteMenuChoice
-	Write-Host $PurgeName
-	Write-Host $PurgeSuffix
-	Write-Host $SearchName
-	Write-Host $SearchType
-	Write-Host $Sender
-	Write-Host $Subject
-	Write-Host $ThisEDiscoverySearch
-	Write-Host $ThisEDiscoverySearchName
-	Write-Host $ThisEDiscoverySearchName
-	Write-Host $ThisEDiscoverySearchRun
-	Write-Host $ThisEDiscoverySearchRun
-	Write-Host $ThisPurge
-	Write-Host $ThisSearch
-	Write-Host $ThisSearchResults
-	Write-Host $ThisSearchResultsLine
-	Write-Host $ThisSearchResultsLines
-	Write-Host $TimeStamp
+	Write-Host AttachmentName [$AttachmentName]
+	Write-Host AttachmentNameSelection [$AttachmentNameSelection]
+	Write-Host ContentMatchQuery [$ContentMatchQuery]
+	Write-Host DangerousEDiscoverySearch [$DangerousEDiscoverySearch]
+	Write-Host DangerousEDiscoverySearchQuitChoice [$DangerousEDiscoverySearchQuitChoice]
+	Write-Host DangerousSearch [$DangerousSearch]
+	Write-Host DateEnd [$DateEnd]
+	Write-Host DateRange [$DateRange]
+	Write-Host DateRangeSeparator [$DateRangeSeparator]
+	Write-Host DateStart [$DateStart]
+	Write-Host EDiscoverySearchMenuChoice [$EDiscoverySearchMenuChoice]
+	Write-Host EDiscoverySearchName [$EDiscoverySearchName]
+	Write-Host ExchangeLocation [$ExchangeLocation]
+	Write-Host ExchangeSearchLocation [$ExchangeSearchLocation]
+	Write-Host mailboxes [$mailboxes]
+	Write-Host MailboxSearch [$MailboxSearch]
+	Write-Host MailboxSearches [$MailboxSearches]
+	Write-Host MenuChoice [$MenuChoice]
+	Write-Host NoDeleteMenuChoice [$NoDeleteMenuChoice]
+	Write-Host PurgeName [$PurgeName]
+	Write-Host PurgeSuffix [$PurgeSuffix]
+	Write-Host SearchName [$SearchName]
+	Write-Host SearchType [$SearchType]
+	Write-Host Sender [$Sender]
+	Write-Host Subject [$Subject]
+	Write-Host ThisEDiscoverySearch [$ThisEDiscoverySearch]
+	Write-Host ThisEDiscoverySearchName [$ThisEDiscoverySearchName]
+	Write-Host ThisEDiscoverySearchRun [$ThisEDiscoverySearchRun]
+	Write-Host ThisPurge [$ThisPurge]
+	Write-Host ThisSearch [$ThisSearch]
+	Write-Host ThisSearchResults [$ThisSearchResults]
+	Write-Host ThisSearchResultsLine [$ThisSearchResultsLine]
+	Write-Host ThisSearchResultsLines [$ThisSearchResultsLines]
+	Write-Host TimeStamp [$TimeStamp]
 }
 
 #Drop the user into the DisplayBanner function (and then Search Type Menu) to begin the process.
