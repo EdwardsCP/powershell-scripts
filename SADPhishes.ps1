@@ -15,6 +15,9 @@
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
 #=================
+#Version 1.0.7
+# Reorganized the order of the functions in the script so it reads more easily top to bottom.
+#=================
 #Version 1.0.6
 # A ComplianceSearch Name can have a maximum of 200 Characters.  Changed the Search Name building process to use a unique integer at the end instead of a timestamp, so that it's less likely that we'll hit the 200 char limit. Then added some error trapping to prompt the user to specify a name if the one built automatically by SADPhishes was >200.  
 #=================
@@ -49,43 +52,43 @@
 
 #Function to Create all SADPhishes Vars and set to Null
 Function CreateSADPhishesNullVars {
-$script:AttachmentName = $null
-$script:AttachmentNameSelection = $null
-$Script:ComplianceSearch = $null
-$Script:ComplianceSearches = $null
-$script:ContentMatchQuery = $null
-$script:DangerousEDiscoverySearch = $null
-$script:DangerousEDiscoverySearchQuitChoice = $null
-$script:DangerousSearch = $null
-$script:DateEnd = $null
-$script:DateRange = $null
-$script:DateRangeSeparator = $null
-$script:DateStart = $null
-$script:EDiscoverySearchMenuChoice = $null
-$script:EDiscoverySearchName = $null
-$script:ExchangeLocation = $null
-$script:ExchangeSearchLocation = $null
-$script:mailboxes = $null
-$script:MailboxSearch = $null
-$script:MailboxSearches = $null
-$script:MenuChoice = $null
-$script:NoDeleteMenuChoice = $null
-$script:PurgeName = $null
-$script:PurgeSuffix = $null
-$script:SearchName = $null
-$script:SearchType = $null
-$script:Sender = $null
-$script:Subject = $null
-$Script:ThisComplianceSearchRun = $null
-$script:ThisEDiscoverySearch = $null
-$script:ThisEDiscoverySearchName = $null
-$script:ThisEDiscoverySearchRun = $null
-$script:ThisPurge = $null
-$script:ThisSearch = $null
-$script:ThisSearchResults = $null
-$script:ThisSearchResultsLine = $null
-$script:ThisSearchResultsLines = $null
-$script:TimeStamp = $null
+	$script:AttachmentName = $null
+	$script:AttachmentNameSelection = $null
+	$Script:ComplianceSearch = $null
+	$Script:ComplianceSearches = $null
+	$script:ContentMatchQuery = $null
+	$script:DangerousEDiscoverySearch = $null
+	$script:DangerousEDiscoverySearchQuitChoice = $null
+	$script:DangerousSearch = $null
+	$script:DateEnd = $null
+	$script:DateRange = $null
+	$script:DateRangeSeparator = $null
+	$script:DateStart = $null
+	$script:EDiscoverySearchMenuChoice = $null
+	$script:EDiscoverySearchName = $null
+	$script:ExchangeLocation = $null
+	$script:ExchangeSearchLocation = $null
+	$script:mailboxes = $null
+	$script:MailboxSearch = $null
+	$script:MailboxSearches = $null
+	$script:MenuChoice = $null
+	$script:NoDeleteMenuChoice = $null
+	$script:PurgeName = $null
+	$script:PurgeSuffix = $null
+	$script:SearchName = $null
+	$script:SearchType = $null
+	$script:Sender = $null
+	$script:Subject = $null
+	$Script:ThisComplianceSearchRun = $null
+	$script:ThisEDiscoverySearch = $null
+	$script:ThisEDiscoverySearchName = $null
+	$script:ThisEDiscoverySearchRun = $null
+	$script:ThisPurge = $null
+	$script:ThisSearch = $null
+	$script:ThisSearchResults = $null
+	$script:ThisSearchResultsLine = $null
+	$script:ThisSearchResultsLines = $null
+	$script:TimeStamp = $null
 }
 
 #Function to clear all of the Vars set by SADPhishes
@@ -170,347 +173,6 @@ Function PrintSADPhishesVars {
 	Write-Host TimeStamp [$script:TimeStamp]
 }
 
-#Function to show the full action menu of options
-Function MenuOptions{
-	Write-host "===================================================="
-	Write-Host "COMPLIANCE SEARCH ACTIONS MENU" -ForegroundColor Green
-	Write-Host How would you like to proceed?
-	Write-Host "[1] Display the Detailed (Format-List) view of the Compliance Search results."
-	Write-Host "[2] Delete the Items (move them to Deleted Recoverable Items). WARNING: No automated way to restore them!"
-	Write-Host "[3] Create an Exchange In-Place eDiscovery Search from the Compliance Search results."
-	Write-Host "[4] Delete this search and Return to the Search Options Menu."
-	}
-	
-#Function to show the eDiscovery Search Action menu of options
-Function EDiscoverySearchMenuOptions{
-	Write-host "===================================================="
-	Write-Host "EDISCOVERY SEARCH ACTIONS MENU" -ForegroundColor Green
-	Write-host How would you like to proceed?
-	Write-Host "[1] Display the Detailed (Format-List) view of the new In-Place eDiscovery Search."
-	Write-Host "[2] Start the new In-Place eDiscovery Search. (Experimental)"
-	Write-Host "[3] Delete the new In-Place eDiscovery Search and return to the Compliance Search Actions Menu."
-	}
-
-#Function for the eDiscovery Search Action menu
-Function ShowEDiscoverySearchMenu {
-	EDiscoverySearchMenuOptions
-	$script:EDiscoverySearchMenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or 3), and press Enter'
-	Switch ($script:EDiscoverySearchMenuChoice){
-		'1'{
-			$script:ThisEDiscoverySearch | Format-List
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-Host "Please review the output above" -ForegroundColor Red
-			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			ShowEDiscoverySearchMenu
-		}
-		
-		'2'{
-			Do {
-				Write-Host "WARNING: Executing an In-Place eDiscovery Search created by SADPhishes is EXPERIMENTAL!" -ForegroundColor Red
-				Write-Host "WARNING: Previous version of SADPhishes were knocking the Mailbox Server offline due to" -ForegroundColor Red
-				Write-Host "WARNING: a search property that worked for Compliance Searches but not eDiscovery Searches." -ForegroundColor Red
-				Write-Host "WARNING: While the error has not been encountered in testing this version, you may not" -ForegroundColor Red
-				Write-Host "WARNING: want to run it in Production." -ForegroundColor Red
-				Write-Host "You have been warned." -ForegroundColor Red
-				$script:DangerousEDiscoverySearch = Read-Host -Prompt 'After reading the warning above, would you like to proceed with executing the search? [Y]es or [Q]uit'
-				switch ($script:DangerousEDiscoverySearch){
-					'Y'{
-						Write-Host "This might blow up.  You're on your own to clean up the mess." -ForegroundColor Red
-						Write-Host "==========================================================================="
-						Write-Host "Starting the new In-Place eDiscovery Search with the name..."
-						Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
-						Write-Host "...that will search against these mailboxes..."
-						Write-Host $script:mailboxes -ForegroundColor Yellow
-						Write-Host "...using the Search Query..."
-						Write-Host $script:ContentMatchQuery -ForegroundColor Yellow
-						Write-Host "==========================================================================="
-						Write-Host "Please wait for the In-Place eDiscovery Search to complete..." -ForegroundColor Yellow
-						Write-Host "==========================================================================="
-						Start-MailboxSearch -Identity $script:ThisEDiscoverySearchName
-							do{
-							$script:ThisEDiscoverySearch = Get-MailboxSearch $script:ThisEDiscoverySearchName
-							Start-Sleep 2
-							Write-Host $script:ThisEDiscoverySearch.Status
-							}
-							until ($script:ThisEDiscoverySearch.Status -match "EstimateSucceeded")
-						Write-Host "==========================================================================="
-						Write-Host "The In-Place eDiscovery Search has completed."
-						Write-Host "You can use this URL to Preview the Results..." 
-						Write-Host $script:ThisEDiscoverySearch.PreviewResultsLink -ForegroundColor Yellow
-						Write-Host "If you need to Copy those results to a Discovery Mailbox, or Export them"
-						Write-Host "to a PST file, please use Exchange Administrative Center's Compliance "
-						Write-Host "Management In-Place eDiscovery workflow to proceed with those actions."
-						Write-Host "==========================================================================="
-						Write-Host " "
-						Read-Host -Prompt "Please review all of the information above and then press Enter to proceed."
-						Write-Host "SADPhishes will now return to the Compliance Search Actions menu where you" -ForegroundColor Yellow
-						Write-Host "will have the option to delete all of the emails with Search Hits." -ForegroundColor Yellow
-						Write-Host "The eDiscovery Searches that were created during this session are not being" -ForegroundColor Yellow
-						Write-Host "deleted." -ForegroundColor Yellow
-						Read-Host "Please review all of the information above then press Enter to return to the Compliance Search Actions Menu."
-						#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-						if ($script:SearchType -match "7"){
-							ShowNoDeleteMenu
-						}
-						#If the search was any other type, show the regular Actions menu that allows Delete.
-						ShowMenu
-					}
-					'q'{
-						Write-Host "Proceeding to return to the Compliance Search Actions Menu..."
-						Do{
-							Write-Host "==========================================================================="
-							Write-Host "Do you want to Remove the new In-Place eDiscovery Search with the name..."
-							Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
-							Write-Host "...or do you want to leave it in place?"
-							Write-Host "[1] Delete the eDiscovery Search and return to the Compliance Search Actions Menu."
-							Write-Host "[2] Return to the Compliance Search Actions Menu without deleting."
-							$script:DangerousEDiscoverySearchQuitChoice = Read-Host -Prompt 'Please enter a selection from the menu (1 or 2) and press Enter.'
-							switch ($script:DangerousEDiscoverySearchQuitChoice){
-								'1'{
-									Remove-MailboxSearch -Identity $script:ThisEDiscoverySearchName
-									Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
-									Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
-									#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-									if ($script:SearchType -match "7"){
-										ShowNoDeleteMenu
-									}
-									#If the search was any other type, show the regular Actions menu that allows Delete.
-									ShowMenu
-								}
-								'2'{
-									#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-									if ($script:SearchType -match "7"){
-										ShowNoDeleteMenu
-									}
-									#If the search was any other type, show the regular Actions menu that allows Delete.
-									ShowMenu
-								}
-							}
-						}
-						Until ($script:DangerousEDiscoverySearchQuitChoice -eq '1')
-					}
-				}
-			}
-		
-		until ($script:DangerousEDiscoverySearch -eq 'q')
-		}
-		
-		'3'{
-			Remove-MailboxSearch -Identity $script:ThisEDiscoverySearchName
-			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
-			Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
-			#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-			if ($script:SearchType -match "7"){
-				ShowNoDeleteMenu
-			}
-			#If the search was any other type, show the regular Actions menu that allows Delete.
-			ShowMenu
-		}
-		
-		'q'{
-			Remove-MailboxSearch -Identity $script:ThisEDiscoverySearchName
-			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
-			Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
-			#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-			if ($script:SearchType -match "7"){
-				ShowNoDeleteMenu
-			}
-			#If the search was any other type, show the regular Actions menu that allows Delete.
-			ShowMenu	
-		}
-	}
-	Until ($script:EDiscoverySearchMenuChoice -eq 'q')
-}
-	
-#Function to create an eDiscovery Search. Code mostly taken from a MS TechNet article.  
- Function CreateEDiscoverySearch{
-	$script:ThisSearchResults = $script:ThisSearch.SuccessResults;
-	if (($script:ThisSearch.Items -le 0) -or ([string]::IsNullOrWhiteSpace($script:ThisSearchResults))){
-               Write-Host "!!!The Compliance Search didn't return any useful results!!!" -ForegroundColor Red
-	}
-	$script:mailboxes = @() #create an empty array for mailboxes
-	$script:ThisSearchResultsLines = $script:ThisSearchResults -split '[\r\n]+'; #Split up the Search Results at carriage return and line feed
-	foreach ($script:ThisSearchResultsLine in $script:ThisSearchResultsLines){
-		# If the Search Results Line matches the regex, and $matches[2] (the value of "Item count: n") is greater than 0)
-		if ($script:ThisSearchResultsLine -match 'Location: (\S+),.+Item count: (\d+)' -and $matches[2] -gt 0){ 
-			# Add the Location: (email address) for that Search Results Line to the $mailboxes array
-			$script:mailboxes += $matches[1]; 
-		}
-	}
-	#Name the the EDiscoverySearch (MailboxSearch) using the Compliance Search's name, followed by _MBSearch, followed by an integer. increase the integer until you hit a name that doesn't already exist.
-	$script:EDiscoverySearchName = $script:SearchName + "_MBSearch";
-	$I = 1;
-	$script:MailboxSearches = Get-MailboxSearch;
-		while ($true){
-			$found = $false
-			$script:ThisEDiscoverySearchRun = "$script:EDiscoverySearchName$I"
-			foreach ($script:MailboxSearch in $script:MailboxSearches){
-				if ($script:MailboxSearch.Name -eq $script:ThisEDiscoverySearchRun){
-					$found = $true;
-					break;
-				}
-		}
-		if (!$found){
-			break;
-		}
-		$I++;
-		}
-	$script:ThisEDiscoverySearchName = "$script:EDiscoverySearchName$i"
-	Write-Host "==========================================================================="
-	Write-Host "Creating a new In-Place eDiscovery Search with the name..."
-	Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
-	Write-Host "...that will search against these mailboxes..."
-	Write-Host $script:mailboxes -ForegroundColor Yellow
-	Write-Host "...using the Search Query..."
-	Write-Host $script:ContentMatchQuery -ForegroundColor Yellow
-	Write-Host "==========================================================================="
-	New-MailboxSearch "$script:ThisEDiscoverySearchName" -SourceMailboxes $script:mailboxes -SearchQuery $script:ContentMatchQuery -EstimateOnly
-	$script:ThisEDiscoverySearch = Get-MailboxSearch $script:ThisEDiscoverySearchName
-	do{
-		$script:ThisEDiscoverySearch = Get-MailboxSearch $script:ThisEDiscoverySearchName
-		Start-Sleep 1
-	}
-	Until ($script:ThisEDiscoverySearch -ne $null)
-	Write-Host "New In-Place eDiscovery Search Successfully Created!" -ForegroundColor Yellow
-	ShowEDiscoverySearchMenu
-}
-
-#Function for full action menu
-Function ShowMenu{
-	Do{
-		MenuOptions
-		$script:MenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or 3), and press Enter'
-		switch ($script:MenuChoice){
-			'1'{
-			$script:ThisSearch | Format-List
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-Host "Please review the output above" -ForegroundColor Red
-			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			ShowMenu
-			}
-			
-			'2'{
-				Write-Host "WARNING: THERE IS NO AUTOMATED WAY TO RESTORE THESE ITEMS IF YOU DELETE THEM!" -ForegroundColor Red
-				Write-Host "WARNING: THERE IS NO AUTOMATED WAY TO RESTORE THESE ITEMS IF YOU DELETE THEM!" -ForegroundColor Red
-				Write-Host "WARNING: THERE IS NO AUTOMATED WAY TO RESTORE THESE ITEMS IF YOU DELETE THEM!" -ForegroundColor Red
-				$script:DangerousPurge = Read-Host -Prompt 'After reading the warning above, would you like to proceed? [Y]es or [Q]uit'
-				Do {
-					switch ($script:DangerousPurge){
-						'Y'{
-							$script:PurgeSuffix = "_purge"
-							$script:PurgeName = $script:SearchName + $script:PurgeSuffix
-							Write-Host "==========================================================================="
-							Write-Host "Creating a new Compliance Search Purge Action with the name..."
-							Write-Host $script:PurgeName -ForegroundColor Yellow
-							Write-Host "==========================================================================="
-							New-ComplianceSearchAction -SearchName "$script:SearchName" -Purge -PurgeType SoftDelete
-								do{
-									$script:ThisPurge = Get-ComplianceSearchAction -Identity $script:PurgeName
-									Start-Sleep 2
-									Write-Host $script:ThisPurge.Status
-								}
-								until ($script:ThisPurge.Status -match "Completed")
-							$script:ThisPurge | Format-List
-							Write-Host "The items have been deleted." -ForegroundColor Red
-							Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
-							ClearSADPhishesVars
-							SearchTypeMenu
-						}
-						'q'{
-							Read-Host -Prompt "Please press Enter to return to the Compliance Search Actions Menu"
-							ShowMenu
-						}
-					}
-				}
-				Until ($script:DangerousPurge -eq 'q')
-			}
-			
-			'3'{
-			CreateEDiscoverySearch
-			}
-			'4'{
-			Remove-ComplianceSearch -Identity $script:SearchName
-			Write-Host "The search has been deleted." -ForegroundColor Red
-			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
-			ClearSADPhishesVars
-			SearchTypeMenu
-			}
-			
-			'q'{
-			Remove-ComplianceSearch -Identity $script:SearchName
-			Write-Host "The search has been deleted." -ForegroundColor Red
-			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
-			ClearSADPhishesVars
-			SearchTypeMenu
-			}
-		}
-	}
-	Until ($script:MenuChoice -eq 'q')
-}
-
-#Function to show the No Delete action menu of options (for Suspicious Attachment Types Search)
-Function NoDeleteMenuOptions{
-	Write-Host "COMPLIANCE SEARCH ACTIONS MENU (No Delete)" -ForegroundColor Green
-	Write-Host "Note: As a precaution, the delete option is not available for a Suspicious Attachment Types Search." -ForegroundColor Yellow
-	Write-Host How would you like to proceed?
-	Write-Host "[1] Display the Detailed (Format-List) view of the search results."
-	Write-Host "[2] Create an Exchange In-Place eDiscovery Search from the results."
-	Write-Host "[3] Delete this search and Return to the Search Options Menu."
-	}
-	
-#Function for No Delete menu (for Suspicious Attachment Types Search)
-Function ShowNoDeleteMenu{
-	Do{
-		NoDeleteMenuOptions
-		$script:NoDeleteMenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2 or 3) and press Enter'
-		switch ($script:NoDeleteMenuChoice){
-			'1'{
-			$script:ThisSearch | Format-List
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-Host "Please review the output above" -ForegroundColor Red
-			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			Write-host "===================================================="  -ForegroundColor Red
-			ShowNoDeleteMenu
-			}
-			
-			'2'{
-			CreateEDiscoverySearch
-			}
-			
-			'3'{
-			Remove-ComplianceSearch -Identity $script:SearchName
-			Write-Host "The search has been deleted." -ForegroundColor Red
-			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
-			ClearSADPhishesVars
-			SearchTypeMenu
-			}
-			
-			'q'{
-			Remove-ComplianceSearch -Identity $script:SearchName
-			Write-Host "The search has been deleted." -ForegroundColor Red
-			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
-			ClearSADPhishesVars
-			SearchTypeMenu
-			}
-		}
-	}
-	Until ($script:MenuChoice -eq 'q')
-}
-
 # Who doesn't like gratuitous ascii art?
 Function DisplayBanner {
 	Write-Host ":(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><"
@@ -566,7 +228,7 @@ Function DisplayBanner {
 	Write-Host "                                                               " -ForegroundColor Yellow
 	SearchTypeMenu
 	}
-	
+
 #Function for SearchType Menu Options Display
 Function SearchTypeOptions {
 	Write-Host "SEARCH OPTIONS MENU" -ForegroundColor Green
@@ -583,73 +245,8 @@ Function SearchTypeOptions {
 	Write-Host "[X] gci variable:"
 	Write-Host "[Y] Print SADPhishesVars"
 	Write-Host "[Z] Clear SADPhishesVars"
-}
-
-#Function for AttachmentName Menu Options Display
-Function AttachmentNameOptions {
-	Write-Host "ATTACHMENT OPTIONS MENU" -ForegroundColor Green
-	Write-Host "Do you want to search for EMails containing an Attachment with a specific File Name?" -ForegroundColor Yellow
-	Write-Host "[1] No"
-	Write-Host "[2] Yes"
-	Write-Host "[Q] Quit and Return to the Search Options Menu"
-}
-
-#Function for AttachmentName Menu
-Function AttachmentNameMenu {
-	Do{
-		AttachmentNameOptions
-		$script:AttachmentNameSelection = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and Press Enter'
-		switch ($script:AttachmentNameSelection){
-			'1'{
-				ExchangeSearchLocationMenu
-			}
-			'2'{
-				$script:AttachmentName = Read-Host -Prompt 'Please enter the exact File Name of the Attachment you want to search for (i.e. SADPhishes.ps1) and Press Enter'
-				ExchangeSearchLocationMenu
-			}
-			'q'{
-				ClearSADPhishesVars
-				SearchTypeMenu
-			}
-		}
-	}
-	until ($script:AttachmentNameSelection -eq 'q')
-}
-
-#Function for ExchangeSearchLocation Menu Options Display
-Function ExchangeSearchLocationOptions {
-	Write-Host ""
-	Write-Host "LOCATION OPTIONS MENU" -ForegroundColor Green
-	Write-Host "Do you want to search All Mailboxes, or restrict your search to a specific Mailbox, Distribution Group, or Mail-Enabled Security Group?" -ForegroundColor Yellow
-	Write-Host "If you restrict your search, you might leave phishes in other places." -ForegroundColor Yellow
-	Write-Host "[1] All Mailboxes"
-	Write-Host "[2] A specific MailBox, Distribution Group, or Mail-Enabled Security Group"
-	Write-Host "[Q] Quit and Return to the Search Options Menu"
-}
-
-#Function for ExchangeSearchLocation Menu
-Function ExchangeSearchLocationMenu {
-	Do {
-		ExchangeSearchLocationOptions
-		$script:ExchangeSearchLocation = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and press Enter'
-		switch ($script:ExchangeSearchLocation){
-			'1'{
-				$script:ExchangeLocation = "all"
-				ComplianceSearch
-			}
-			'2'{
-				$script:ExchangeLocation = Read-Host -Prompt 'Please enter the EMail Address of the MailBox or Group you would like to search within'
-				ComplianceSearch
-			}
-			'q'{
-				ClearSADPhishesVars
-				SearchTypeMenu
-			}
-		}
-	}
-	until ($script:SearchType -eq 'q')
-}
-
+}	
+	
 #Function for Search Type Menu
 Function SearchTypeMenu{
 	Do {	
@@ -738,36 +335,72 @@ Function SearchTypeMenu{
 	until ($script:SearchType -eq 'q')
 }
 
-#Function to count and list Mailboxes with Search Hits.  Code mostly taken from a MS TechNet article.
-Function ThisSearchMailboxCount {
-	$script:ThisSearchResults = $script:ThisSearch.SuccessResults;
-	if (($script:ThisSearch.Items -le 0) -or ([string]::IsNullOrWhiteSpace($script:ThisSearchResults))){
-               Write-Host "!!!The Compliance Search didn't return any useful results!!!" -ForegroundColor Red
-	}
-	$script:mailboxes = @() #create an empty array for mailboxes
-	$script:ThisSearchResultsLines = $script:ThisSearchResults -split '[\r\n]+'; #Split up the Search Results at carriage return and line feed
-	foreach ($script:ThisSearchResultsLine in $script:ThisSearchResultsLines){
-		# If the Search Results Line matches the regex, and $matches[2] (the value of "Item count: n") is greater than 0)
-		if ($script:ThisSearchResultsLine -match 'Location: (\S+),.+Item count: (\d+)' -and $matches[2] -gt 0){ 
-			# Add the Location: (email address) for that Search Results Line to the $mailboxes array
-			$script:mailboxes += $matches[1]; 
-		}
-	}
-	Write-Host "Number of mailboxes that have Search Hits..."
-	Write-Host $script:mailboxes.Count -ForegroundColor Yellow
-	Write-Host "List of mailboxes that have Search Hits..."
-	write-Host $script:mailboxes -ForegroundColor Yellow
-	if ($script:mailboxes.Count -gt 499) {
-		Write-Host "============WARNING - There are 500 or more Mailboxes with results!============" -ForegroundColor Red
-		Write-Host "Microsoft's Compliance Search can search everywhere, but only returns the top" -ForegroundColor Red
-		Write-Host "500 Mailboxes with the most hits that match the search!" -ForegroundColor Red
-		Write-Host " " 
-		Write-Host "If you use this search to delete Email Items, you will need to run the same" -ForegroundColor Red
-		Write-Host "query again to return more mailboxes if there are more than 500 with hits." -ForegroundColor Red
-		Read-Host -Prompt "Please press Enter after reading the warning above."
-	}
+#Function for AttachmentName Menu Options Display
+Function AttachmentNameOptions {
+	Write-Host "ATTACHMENT OPTIONS MENU" -ForegroundColor Green
+	Write-Host "Do you want to search for EMails containing an Attachment with a specific File Name?" -ForegroundColor Yellow
+	Write-Host "[1] No"
+	Write-Host "[2] Yes"
+	Write-Host "[Q] Quit and Return to the Search Options Menu"
 }
 
+#Function for AttachmentName Menu
+Function AttachmentNameMenu {
+	Do{
+		AttachmentNameOptions
+		$script:AttachmentNameSelection = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and Press Enter'
+		switch ($script:AttachmentNameSelection){
+			'1'{
+				ExchangeSearchLocationMenu
+			}
+			'2'{
+				$script:AttachmentName = Read-Host -Prompt 'Please enter the exact File Name of the Attachment you want to search for (i.e. SADPhishes.ps1) and Press Enter'
+				ExchangeSearchLocationMenu
+			}
+			'q'{
+				ClearSADPhishesVars
+				SearchTypeMenu
+			}
+		}
+	}
+	until ($script:AttachmentNameSelection -eq 'q')
+}
+
+#Function for ExchangeSearchLocation Menu Options Display
+Function ExchangeSearchLocationOptions {
+	Write-Host ""
+	Write-Host "LOCATION OPTIONS MENU" -ForegroundColor Green
+	Write-Host "Do you want to search All Mailboxes, or restrict your search to a specific Mailbox, Distribution Group, or Mail-Enabled Security Group?" -ForegroundColor Yellow
+	Write-Host "If you restrict your search, you might leave phishes in other places." -ForegroundColor Yellow
+	Write-Host "[1] All Mailboxes"
+	Write-Host "[2] A specific MailBox, Distribution Group, or Mail-Enabled Security Group"
+	Write-Host "[Q] Quit and Return to the Search Options Menu"
+}
+
+#Function for ExchangeSearchLocation Menu
+Function ExchangeSearchLocationMenu {
+	Do {
+		ExchangeSearchLocationOptions
+		$script:ExchangeSearchLocation = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and press Enter'
+		switch ($script:ExchangeSearchLocation){
+			'1'{
+				$script:ExchangeLocation = "all"
+				ComplianceSearch
+			}
+			'2'{
+				$script:ExchangeLocation = Read-Host -Prompt 'Please enter the EMail Address of the MailBox or Group you would like to search within'
+				ComplianceSearch
+			}
+			'q'{
+				ClearSADPhishesVars
+				SearchTypeMenu
+			}
+		}
+	}
+	until ($script:SearchType -eq 'q')
+}
+
+#Function for the Compliance Search Creation and Execution
 Function ComplianceSearch {
 	#Set SearchName based on SearchType
 	switch ($script:SearchType){
@@ -915,6 +548,380 @@ Function ComplianceSearch {
 	ShowMenu
 }
 
+#Function to count and list Mailboxes with Search Hits.  Code mostly taken from a MS TechNet article.
+Function ThisSearchMailboxCount {
+	$script:ThisSearchResults = $script:ThisSearch.SuccessResults;
+	if (($script:ThisSearch.Items -le 0) -or ([string]::IsNullOrWhiteSpace($script:ThisSearchResults))){
+               Write-Host "!!!The Compliance Search didn't return any useful results!!!" -ForegroundColor Red
+	}
+	$script:mailboxes = @() #create an empty array for mailboxes
+	$script:ThisSearchResultsLines = $script:ThisSearchResults -split '[\r\n]+'; #Split up the Search Results at carriage return and line feed
+	foreach ($script:ThisSearchResultsLine in $script:ThisSearchResultsLines){
+		# If the Search Results Line matches the regex, and $matches[2] (the value of "Item count: n") is greater than 0)
+		if ($script:ThisSearchResultsLine -match 'Location: (\S+),.+Item count: (\d+)' -and $matches[2] -gt 0){ 
+			# Add the Location: (email address) for that Search Results Line to the $mailboxes array
+			$script:mailboxes += $matches[1]; 
+		}
+	}
+	Write-Host "Number of mailboxes that have Search Hits..."
+	Write-Host $script:mailboxes.Count -ForegroundColor Yellow
+	Write-Host "List of mailboxes that have Search Hits..."
+	write-Host $script:mailboxes -ForegroundColor Yellow
+	if ($script:mailboxes.Count -gt 499) {
+		Write-Host "============WARNING - There are 500 or more Mailboxes with results!============" -ForegroundColor Red
+		Write-Host "Microsoft's Compliance Search can search everywhere, but only returns the top" -ForegroundColor Red
+		Write-Host "500 Mailboxes with the most hits that match the search!" -ForegroundColor Red
+		Write-Host " " 
+		Write-Host "If you use this search to delete Email Items, you will need to run the same" -ForegroundColor Red
+		Write-Host "query again to return more mailboxes if there are more than 500 with hits." -ForegroundColor Red
+		Read-Host -Prompt "Please press Enter after reading the warning above."
+	}
+}
+
+#Function to show the full action menu of options
+Function MenuOptions{
+	Write-host "===================================================="
+	Write-Host "COMPLIANCE SEARCH ACTIONS MENU" -ForegroundColor Green
+	Write-Host How would you like to proceed?
+	Write-Host "[1] Display the Detailed (Format-List) view of the Compliance Search results."
+	Write-Host "[2] Delete the Items (move them to Deleted Recoverable Items). WARNING: No automated way to restore them!"
+	Write-Host "[3] Create an Exchange In-Place eDiscovery Search from the Compliance Search results."
+	Write-Host "[4] Delete this search and Return to the Search Options Menu."
+	}
+	
+#Function for full action menu
+Function ShowMenu{
+	Do{
+		MenuOptions
+		$script:MenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or 3), and press Enter'
+		switch ($script:MenuChoice){
+			'1'{
+			$script:ThisSearch | Format-List
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-Host "Please review the output above" -ForegroundColor Red
+			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			ShowMenu
+			}
+			
+			'2'{
+				Write-Host "WARNING: THERE IS NO AUTOMATED WAY TO RESTORE THESE ITEMS IF YOU DELETE THEM!" -ForegroundColor Red
+				Write-Host "WARNING: THERE IS NO AUTOMATED WAY TO RESTORE THESE ITEMS IF YOU DELETE THEM!" -ForegroundColor Red
+				Write-Host "WARNING: THERE IS NO AUTOMATED WAY TO RESTORE THESE ITEMS IF YOU DELETE THEM!" -ForegroundColor Red
+				$script:DangerousPurge = Read-Host -Prompt 'After reading the warning above, would you like to proceed? [Y]es or [Q]uit'
+				Do {
+					switch ($script:DangerousPurge){
+						'Y'{
+							$script:PurgeSuffix = "_purge"
+							$script:PurgeName = $script:SearchName + $script:PurgeSuffix
+							Write-Host "==========================================================================="
+							Write-Host "Creating a new Compliance Search Purge Action with the name..."
+							Write-Host $script:PurgeName -ForegroundColor Yellow
+							Write-Host "==========================================================================="
+							New-ComplianceSearchAction -SearchName "$script:SearchName" -Purge -PurgeType SoftDelete
+								do{
+									$script:ThisPurge = Get-ComplianceSearchAction -Identity $script:PurgeName
+									Start-Sleep 2
+									Write-Host $script:ThisPurge.Status
+								}
+								until ($script:ThisPurge.Status -match "Completed")
+							$script:ThisPurge | Format-List
+							Write-Host "The items have been deleted." -ForegroundColor Red
+							Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
+							ClearSADPhishesVars
+							SearchTypeMenu
+						}
+						'q'{
+							Read-Host -Prompt "Please press Enter to return to the Compliance Search Actions Menu"
+							ShowMenu
+						}
+					}
+				}
+				Until ($script:DangerousPurge -eq 'q')
+			}
+			
+			'3'{
+			CreateEDiscoverySearch
+			}
+			'4'{
+			Remove-ComplianceSearch -Identity $script:SearchName
+			Write-Host "The search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
+			ClearSADPhishesVars
+			SearchTypeMenu
+			}
+			
+			'q'{
+			Remove-ComplianceSearch -Identity $script:SearchName
+			Write-Host "The search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
+			ClearSADPhishesVars
+			SearchTypeMenu
+			}
+		}
+	}
+	Until ($script:MenuChoice -eq 'q')
+}
+
+#Function to show the No Delete action menu of options (for Suspicious Attachment Types Search)
+Function NoDeleteMenuOptions{
+	Write-Host "COMPLIANCE SEARCH ACTIONS MENU (No Delete)" -ForegroundColor Green
+	Write-Host "Note: As a precaution, the delete option is not available for a Suspicious Attachment Types Search." -ForegroundColor Yellow
+	Write-Host How would you like to proceed?
+	Write-Host "[1] Display the Detailed (Format-List) view of the search results."
+	Write-Host "[2] Create an Exchange In-Place eDiscovery Search from the results."
+	Write-Host "[3] Delete this search and Return to the Search Options Menu."
+	}
+	
+#Function for No Delete menu (for Suspicious Attachment Types Search)
+Function ShowNoDeleteMenu{
+	Do{
+		NoDeleteMenuOptions
+		$script:NoDeleteMenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2 or 3) and press Enter'
+		switch ($script:NoDeleteMenuChoice){
+			'1'{
+			$script:ThisSearch | Format-List
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-Host "Please review the output above" -ForegroundColor Red
+			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			ShowNoDeleteMenu
+			}
+			
+			'2'{
+			CreateEDiscoverySearch
+			}
+			
+			'3'{
+			Remove-ComplianceSearch -Identity $script:SearchName
+			Write-Host "The search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
+			ClearSADPhishesVars
+			SearchTypeMenu
+			}
+			
+			'q'{
+			Remove-ComplianceSearch -Identity $script:SearchName
+			Write-Host "The search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
+			ClearSADPhishesVars
+			SearchTypeMenu
+			}
+		}
+	}
+	Until ($script:MenuChoice -eq 'q')
+}
+
+	
+#Function to create an eDiscovery Search. Code mostly taken from a MS TechNet article.  
+ Function CreateEDiscoverySearch{
+	$script:ThisSearchResults = $script:ThisSearch.SuccessResults;
+	if (($script:ThisSearch.Items -le 0) -or ([string]::IsNullOrWhiteSpace($script:ThisSearchResults))){
+               Write-Host "!!!The Compliance Search didn't return any useful results!!!" -ForegroundColor Red
+	}
+	$script:mailboxes = @() #create an empty array for mailboxes
+	$script:ThisSearchResultsLines = $script:ThisSearchResults -split '[\r\n]+'; #Split up the Search Results at carriage return and line feed
+	foreach ($script:ThisSearchResultsLine in $script:ThisSearchResultsLines){
+		# If the Search Results Line matches the regex, and $matches[2] (the value of "Item count: n") is greater than 0)
+		if ($script:ThisSearchResultsLine -match 'Location: (\S+),.+Item count: (\d+)' -and $matches[2] -gt 0){ 
+			# Add the Location: (email address) for that Search Results Line to the $mailboxes array
+			$script:mailboxes += $matches[1]; 
+		}
+	}
+	#Name the the EDiscoverySearch (MailboxSearch) using the Compliance Search's name, followed by _MBSearch, followed by an integer. increase the integer until you hit a name that doesn't already exist.
+	$script:EDiscoverySearchName = $script:SearchName + "_MBSearch";
+	$I = 1;
+	$script:MailboxSearches = Get-MailboxSearch;
+		while ($true){
+			$found = $false
+			$script:ThisEDiscoverySearchRun = "$script:EDiscoverySearchName$I"
+			foreach ($script:MailboxSearch in $script:MailboxSearches){
+				if ($script:MailboxSearch.Name -eq $script:ThisEDiscoverySearchRun){
+					$found = $true;
+					break;
+				}
+		}
+		if (!$found){
+			break;
+		}
+		$I++;
+		}
+	$script:ThisEDiscoverySearchName = "$script:EDiscoverySearchName$i"
+	Write-Host "==========================================================================="
+	Write-Host "Creating a new In-Place eDiscovery Search with the name..."
+	Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
+	Write-Host "...that will search against these mailboxes..."
+	Write-Host $script:mailboxes -ForegroundColor Yellow
+	Write-Host "...using the Search Query..."
+	Write-Host $script:ContentMatchQuery -ForegroundColor Yellow
+	Write-Host "==========================================================================="
+	New-MailboxSearch "$script:ThisEDiscoverySearchName" -SourceMailboxes $script:mailboxes -SearchQuery $script:ContentMatchQuery -EstimateOnly
+	$script:ThisEDiscoverySearch = Get-MailboxSearch $script:ThisEDiscoverySearchName
+	do{
+		$script:ThisEDiscoverySearch = Get-MailboxSearch $script:ThisEDiscoverySearchName
+		Start-Sleep 1
+	}
+	Until ($script:ThisEDiscoverySearch -ne $null)
+	Write-Host "New In-Place eDiscovery Search Successfully Created!" -ForegroundColor Yellow
+	ShowEDiscoverySearchMenu
+}
+
+
+#Function to show the eDiscovery Search Action menu of options
+Function EDiscoverySearchMenuOptions{
+	Write-host "===================================================="
+	Write-Host "EDISCOVERY SEARCH ACTIONS MENU" -ForegroundColor Green
+	Write-host How would you like to proceed?
+	Write-Host "[1] Display the Detailed (Format-List) view of the new In-Place eDiscovery Search."
+	Write-Host "[2] Start the new In-Place eDiscovery Search. (Experimental)"
+	Write-Host "[3] Delete the new In-Place eDiscovery Search and return to the Compliance Search Actions Menu."
+	}
+
+#Function for the eDiscovery Search Action menu
+Function ShowEDiscoverySearchMenu {
+	EDiscoverySearchMenuOptions
+	$script:EDiscoverySearchMenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or 3), and press Enter'
+	Switch ($script:EDiscoverySearchMenuChoice){
+		'1'{
+			$script:ThisEDiscoverySearch | Format-List
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-Host "Please review the output above" -ForegroundColor Red
+			Write-host "After reviewing, please make another selection below"  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			Write-host "===================================================="  -ForegroundColor Red
+			ShowEDiscoverySearchMenu
+		}
+		
+		'2'{
+			Do {
+				Write-Host "WARNING: Executing an In-Place eDiscovery Search created by SADPhishes is EXPERIMENTAL!" -ForegroundColor Red
+				Write-Host "WARNING: Previous versions of SADPhishes were knocking the Mailbox Server offline due to" -ForegroundColor Red
+				Write-Host "WARNING: a search property that worked for Compliance Searches but not eDiscovery Searches." -ForegroundColor Red
+				Write-Host "WARNING: While the error has not been encountered in testing this version, you may not" -ForegroundColor Red
+				Write-Host "WARNING: want to run it in Production." -ForegroundColor Red
+				Write-Host "You have been warned." -ForegroundColor Red
+				$script:DangerousEDiscoverySearch = Read-Host -Prompt 'After reading the warning above, would you like to proceed with executing the search? [Y]es or [Q]uit'
+				switch ($script:DangerousEDiscoverySearch){
+					'Y'{
+						Write-Host "This might blow up.  You're on your own to clean up the mess." -ForegroundColor Red
+						Write-Host "==========================================================================="
+						Write-Host "Starting the new In-Place eDiscovery Search with the name..."
+						Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
+						Write-Host "...that will search against these mailboxes..."
+						Write-Host $script:mailboxes -ForegroundColor Yellow
+						Write-Host "...using the Search Query..."
+						Write-Host $script:ContentMatchQuery -ForegroundColor Yellow
+						Write-Host "==========================================================================="
+						Write-Host "Please wait for the In-Place eDiscovery Search to complete..." -ForegroundColor Yellow
+						Write-Host "==========================================================================="
+						Start-MailboxSearch -Identity $script:ThisEDiscoverySearchName
+							do{
+							$script:ThisEDiscoverySearch = Get-MailboxSearch $script:ThisEDiscoverySearchName
+							Start-Sleep 2
+							Write-Host $script:ThisEDiscoverySearch.Status
+							}
+							until ($script:ThisEDiscoverySearch.Status -match "EstimateSucceeded")
+						Write-Host "==========================================================================="
+						Write-Host "The In-Place eDiscovery Search has completed."
+						Write-Host "You can use this URL to Preview the Results..." 
+						Write-Host $script:ThisEDiscoverySearch.PreviewResultsLink -ForegroundColor Yellow
+						Write-Host "If you need to Copy those results to a Discovery Mailbox, or Export them"
+						Write-Host "to a PST file, please use Exchange Administrative Center's Compliance "
+						Write-Host "Management In-Place eDiscovery workflow to proceed with those actions."
+						Write-Host "==========================================================================="
+						Write-Host " "
+						Read-Host -Prompt "Please review all of the information above and then press Enter to proceed."
+						Write-Host "SADPhishes will now return to the Compliance Search Actions menu where you" -ForegroundColor Yellow
+						Write-Host "will have the option to delete all of the emails with Search Hits." -ForegroundColor Yellow
+						Write-Host "The eDiscovery Searches that were created during this session are not being" -ForegroundColor Yellow
+						Write-Host "deleted." -ForegroundColor Yellow
+						Read-Host "Please review all of the information above then press Enter to return to the Compliance Search Actions Menu."
+						#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+						if ($script:SearchType -match "7"){
+							ShowNoDeleteMenu
+						}
+						#If the search was any other type, show the regular Actions menu that allows Delete.
+						ShowMenu
+					}
+					'q'{
+						Write-Host "Proceeding to return to the Compliance Search Actions Menu..."
+						Do{
+							Write-Host "==========================================================================="
+							Write-Host "Do you want to Remove the new In-Place eDiscovery Search with the name..."
+							Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
+							Write-Host "...or do you want to leave it in place?"
+							Write-Host "[1] Delete the eDiscovery Search and return to the Compliance Search Actions Menu."
+							Write-Host "[2] Return to the Compliance Search Actions Menu without deleting."
+							$script:DangerousEDiscoverySearchQuitChoice = Read-Host -Prompt 'Please enter a selection from the menu (1 or 2) and press Enter.'
+							switch ($script:DangerousEDiscoverySearchQuitChoice){
+								'1'{
+									Remove-MailboxSearch -Identity $script:ThisEDiscoverySearchName
+									Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
+									Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
+									#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+									if ($script:SearchType -match "7"){
+										ShowNoDeleteMenu
+									}
+									#If the search was any other type, show the regular Actions menu that allows Delete.
+									ShowMenu
+								}
+								'2'{
+									#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+									if ($script:SearchType -match "7"){
+										ShowNoDeleteMenu
+									}
+									#If the search was any other type, show the regular Actions menu that allows Delete.
+									ShowMenu
+								}
+							}
+						}
+						Until ($script:DangerousEDiscoverySearchQuitChoice -eq '1')
+					}
+				}
+			}
+		
+		until ($script:DangerousEDiscoverySearch -eq 'q')
+		}
+		
+		'3'{
+			Remove-MailboxSearch -Identity $script:ThisEDiscoverySearchName
+			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
+			#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+			if ($script:SearchType -match "7"){
+				ShowNoDeleteMenu
+			}
+			#If the search was any other type, show the regular Actions menu that allows Delete.
+			ShowMenu
+		}
+		
+		'q'{
+			Remove-MailboxSearch -Identity $script:ThisEDiscoverySearchName
+			Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
+			Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
+			#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+			if ($script:SearchType -match "7"){
+				ShowNoDeleteMenu
+			}
+			#If the search was any other type, show the regular Actions menu that allows Delete.
+			ShowMenu	
+		}
+	}
+	Until ($script:EDiscoverySearchMenuChoice -eq 'q')
+}
+
 
 #Drop the user into the DisplayBanner function (and then Search Type Menu) to begin the process.
 DisplayBanner
+
