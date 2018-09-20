@@ -15,6 +15,9 @@
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
 #=================
+#Version 1.0.8
+# Fixed some bugs with the header text file search options
+#=================
 #Version 1.0.7
 # Reorganized the order of the functions in the script so it reads more easily top to bottom.
 # Added option to launch eDiscovery Search results preview in default browser.
@@ -53,166 +56,6 @@
 
 
 
-#Function to Create all SADPhishes Vars and set to Null
-Function CreateSADPhishesNullVars {
-	$script:AttachmentName = $null
-	$script:AttachmentNameSelection = $null
-	$Script:ComplianceSearch = $null
-	$Script:ComplianceSearches = $null
-	$script:ContentMatchQuery = $null
-	$script:DangerousEDiscoverySearch = $null
-	$script:DangerousEDiscoverySearchQuitChoice = $null
-	$script:DangerousSearch = $null
-	$script:DateEnd = $null
-	$Script:DateHeaderMatches = $null
-	$Script:DateFromHeader = $null
-	$script:DateRange = $null
-	$script:DateRangeSeparator = $null
-	$script:DateStart = $null
-	$script:EDiscoverySearchMenuChoice = $null
-	$script:EDiscoverySearchName = $null
-	$script:EmailHeadersFile = $null
-	$script:EmailHeadersLine = $null
-	$script:EmailHeadersLines = $null
-	$script:ExchangeLocation = $null
-	$script:ExchangeSearchLocation = $null
-	$Script:FromHeaderMatches = $null
-	$script:LaunchEDiscoveryURL = $null
-	$script:mailboxes = $null
-	$script:MailboxSearch = $null
-	$script:MailboxSearches = $null
-	$script:MenuChoice = $null
-	$script:NoDeleteMenuChoice = $null
-	$script:PurgeName = $null
-	$script:PurgeSuffix = $null
-	$script:SearchName = $null
-	$script:SearchType = $null
-	$script:Sender = $null
-	$script:Subject = $null
-	$Script:SubjectHeaderMatches = $null
-	$Script:ThisComplianceSearchRun = $null
-	$script:ThisEDiscoverySearch = $null
-	$script:ThisEDiscoverySearchName = $null
-	$script:ThisEDiscoverySearchPreviewURL = $null
-	$script:ThisEDiscoverySearchRun = $null
-	$script:ThisPurge = $null
-	$script:ThisSearch = $null
-	$script:ThisSearchResults = $null
-	$script:ThisSearchResultsLine = $null
-	$script:ThisSearchResultsLines = $null
-	$script:TimeStamp = $null
-	$Script:UseDateFromHeaderFile = $null
-	$Script:UseSenderFromHeaderFile = $null
-	$Script:UseSubjectFromHeaderFile = $null
-
-}
-
-#Function to clear all of the Vars set by SADPhishes
-Function ClearSADPhishesVars {
-	Clear-Variable -Name AttachmentName -Scope Script
-	Clear-Variable -Name AttachmentNameSelection -Scope Script
-	Clear-Variable -Name ContentMatchQuery -Scope Script
-	Clear-Variable -Name ComplianceSearch -Scope Script
-	Clear-Variable -Name ComplianceSearches -Scope Script
-	Clear-Variable -Name DangerousEDiscoverySearch -Scope Script
-	Clear-Variable -Name DangerousEDiscoverySearchQuitChoice -Scope Script
-	Clear-Variable -Name DangerousSearch -Scope Script
-	Clear-Variable -Name DateEnd -Scope Script
-	Clear-Variable -Name DateHeaderMatches -Scope Script
-	Clear-Variable -Name DateFromHeader -Scope Script
-	Clear-Variable -Name DateRange -Scope Script
-	Clear-Variable -Name DateRangeSeparator -Scope Script
-	Clear-Variable -Name DateStart -Scope Script
-	Clear-Variable -Name EDiscoverySearchMenuChoice -Scope Script
-	Clear-Variable -Name EDiscoverySearchName -Scope Script
-	Clear-Variable -Name ExchangeLocation -Scope Script
-	Clear-Variable -Name ExchangeSearchLocation -Scope Script
-	Clear-Variable -Name LaunchEDiscoveryURL -Scope Script
-	Clear-Variable -Name mailboxes -Scope Script
-	Clear-Variable -Name MailboxSearch -Scope Script
-	Clear-Variable -Name MailboxSearches -Scope Script
-	Clear-Variable -Name MenuChoice -Scope Script
-	Clear-Variable -Name NoDeleteMenuChoice -Scope Script
-	Clear-Variable -Name PurgeName -Scope Script
-	Clear-Variable -Name PurgeSuffix -Scope Script
-	Clear-Variable -Name SearchName -Scope Script
-	Clear-Variable -Name SearchType -Scope Script
-	Clear-Variable -Name Sender -Scope Script
-	Clear-Variable -Name Subject -Scope Script
-	Clear-Variable -Name ThisComplianceSearchRun -Scope Script
-	Clear-Variable -Name ThisEDiscoverySearch -Scope Script
-	Clear-Variable -Name ThisEDiscoverySearchName -Scope Script
-	Clear-Variable -Name ThisEDiscoverySearchPreviewURL -Scope Script
-	Clear-Variable -Name ThisEDiscoverySearchRun -Scope Script
-	Clear-Variable -Name ThisPurge -Scope Script
-	Clear-Variable -Name ThisSearch -Scope Script
-	Clear-Variable -Name ThisSearchResults -Scope Script
-	Clear-Variable -Name ThisSearchResultsLine -Scope Script
-	Clear-Variable -Name ThisSearchResultsLines -Scope Script
-	Clear-Variable -Name TimeStamp -Scope Script
-	Clear-Variable -Name UseDateFromHeaderFile -Scope Script
-	Clear-Variable -Name FromHeaderMatches -Scope Script
-	Clear-Variable -Name UseSubjectFromHeaderFile -Scope Script
-	Clear-Variable -Name UseSenderFromHeaderFile -Scope Script
-	Clear-Variable -Name EmailHeadersLine -Scope Script
-	Clear-Variable -Name EmailHeadersLines -Scope Script
-	Clear-Variable -Name EmailHeadersFile -Scope Script
-	Clear-Variable -Name SubjectHeaderMatches -Scope Script
-}
-
-#Function to print all SADPhishes Vars
-Function PrintSADPhishesVars {
-	Write-Host AttachmentName [$script:AttachmentName]
-	Write-Host AttachmentNameSelection [$script:AttachmentNameSelection]
-	Write-Host ContentMatchQuery [$script:ContentMatchQuery]
-	Write-Host ComplianceSearch [$script:ComplianceSearch]
-	Write-Host ComplianceSearches [$script:ComplianceSearches]
-	Write-Host DangerousEDiscoverySearch [$script:DangerousEDiscoverySearch]
-	Write-Host DangerousEDiscoverySearchQuitChoice [$script:DangerousEDiscoverySearchQuitChoice]
-	Write-Host DangerousSearch [$script:DangerousSearch]
-	Write-Host DateEnd [$script:DateEnd]
-	Write-Host DateFromHeader [$script:DateFromHeader]
-	Write-Host DateHeaderMatches [$script:DateHeaderMatches]
-	Write-Host DateRange [$script:DateRange]
-	Write-Host DateRangeSeparator [$script:DateRangeSeparator]
-	Write-Host DateStart [$script:DateStart]
-	Write-Host EDiscoverySearchMenuChoice [$script:EDiscoverySearchMenuChoice]
-	Write-Host EDiscoverySearchName [$script:EDiscoverySearchName]
-	Write-Host ExchangeLocation [$script:ExchangeLocation]
-	Write-Host ExchangeSearchLocation [$script:ExchangeSearchLocation]
-	Write-Host LaunchEDiscoveryURL [$script:LaunchEDiscoveryURL]
-	Write-Host mailboxes [$script:mailboxes]
-	Write-Host MailboxSearch [$script:MailboxSearch]
-	Write-Host MailboxSearches [$script:MailboxSearches]
-	Write-Host MenuChoice [$script:MenuChoice]
-	Write-Host NoDeleteMenuChoice [$script:NoDeleteMenuChoice]
-	Write-Host PurgeName [$script:PurgeName]
-	Write-Host PurgeSuffix [$script:PurgeSuffix]
-	Write-Host SearchName [$script:SearchName]
-	Write-Host SearchType [$script:SearchType]
-	Write-Host Sender [$script:Sender]
-	Write-Host Subject [$script:Subject]
-	Write-Host ThisComplianceSearchRun [$Script:ThisComplianceSearchRun]
-	Write-Host ThisEDiscoverySearch [$script:ThisEDiscoverySearch]
-	Write-Host ThisEDiscoverySearchName [$script:ThisEDiscoverySearchName]
-	Write-Host ThisEDiscoverySearchPreviewURL [$script:ThisEDiscoverySearchPreviewURL]
-	Write-Host ThisEDiscoverySearchRun [$script:ThisEDiscoverySearchRun]
-	Write-Host ThisPurge [$script:ThisPurge]
-	Write-Host ThisSearch [$script:ThisSearch]
-	Write-Host ThisSearchResults [$script:ThisSearchResults]
-	Write-Host ThisSearchResultsLine [$script:ThisSearchResultsLine]
-	Write-Host ThisSearchResultsLines [$script:ThisSearchResultsLines]
-	Write-Host TimeStamp [$script:TimeStamp]
-	Write-Host FromHeaderMatches [$script:FromHeaderMatches]
-	Write-Host UseDateFromHeaderFile [$Script:UseDateFromHeaderFile]
-	Write-Host UseSubjectFromHeaderFile [$script:UseSubjectFromHeaderFile]
-	Write-Host UseSenderFromHeaderFile [$script:UseSenderFromHeaderFile]
-	Write-Host EmailHeadersLine [$script:EmailHeadersLine]
-	Write-Host EmailHeadersLines [$script:EmailHeadersLines]
-	Write-Host EmailHeadersFile [$script:EmailHeadersFile]
-	Write-Host SubjectHeaderMatches [$script:SubjectHeaderMatches]
-}
-
 # Who doesn't like gratuitous ascii art?
 Function DisplayBanner {
 	Write-Host ":(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><"
@@ -240,6 +83,7 @@ Function DisplayBanner {
 	Write-Host ":(:(:(:(:(:(:                       :(:(:(:(:(:(<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><"
 	Write-Host ":(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(:(<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><<><"
 	Write-Host "================================================================================================"
+	Start-Sleep -m 200
 	Write-Host "             _____             _____                  _____  _     _     _                 "
 	Write-Host "            / ____|    /\     |  __ \                |  __ \| |   (_)   | |                "
 	Write-Host "           | (___     /  \    | |  | |               | |__) | |__  _ ___| |__   ___  ___   "
@@ -252,8 +96,9 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                              ________________________/ |  "
-	Write-Host "                                                             |@EdwardsCP v1.0.7 2018___/   "
+	Write-Host "                                                             |@EdwardsCP v1.0.8 2018___/   "
 	Write-Host "================================================================================================"
+	Start-Sleep -m 200
 	Write-Host "===============================================================" -ForegroundColor Yellow
 	Write-Host "== Exchange 2016 Compliance (S)earch (A)nd (D)estroy Phishes ==" -ForegroundColor Yellow
 	Write-Host "===============================================================" -ForegroundColor Yellow
@@ -383,7 +228,7 @@ Function SearchTypeMenu{
 	until ($script:SearchType -eq 'q')
 }
 
-#Function to Open a Text file containing email headers, parse each line to find the From: and Subject: values, ask the user if they want to use what was found, and proceed to the AttachentNameMenu
+#Function to Open a Text file containing email headers, parse each line to find the From:, Subject:, and Date: values, and output to the results.
 Function ParseEmailHeadersFile{
     $script:EmailHeadersFile = Get-FileName
     $script:EmailHeadersLines = Get-Content $Script:EmailHeadersFile
@@ -391,7 +236,7 @@ Function ParseEmailHeadersFile{
     Foreach ($script:EmailHeadersLine in $script:EmailHeadersLines){
 	    $Script:FromHeaderMatches = $script:EmailHeadersLine -match '^From:.*<(.*@.*)>$'
         $Script:SubjectHeaderMatches = $script:EmailHeadersLine -match '^Subject: (.*)$'
-		$Script:DateHeaderMatches = $script:EmailHeadersLine -match '^Date:(.*)$'
+		$Script:DateHeaderMatches = $script:EmailHeadersLine -match '^Date: (([a-zA-Z][a-zA-Z][a-zA-Z]), (\d\d) ([a-zA-Z][a-zA-Z][a-zA-Z]) (\d\d\d\d).*)$'
 	    If ($Script:FromHeaderMatches) {
     		$Script:Sender = $matches[1]
     	Write-Host "SADPhishes found this Sender Address..." -ForegroundColor Yellow
@@ -406,22 +251,69 @@ Function ParseEmailHeadersFile{
 		
         If ($script:DateHeaderMatches){
             $Script:DateFromHeader = $matches[1]
+			$Script:DateFromHeaderDayOfWeek = $matches[2]
+			$Script:DateFromHeaderDayOfMonth = $matches[3]
+			$Script:DateFromHeaderMonth = $matches[4]
+			$Script:DateFromHeaderYear = $matches[5]
+			If ($Script:DateFromHeaderMonth -eq 'Jan'){
+				$Script:DateFromHeaderMonthNum = "1"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Feb'){
+				$Script:DateFromHeaderMonthNum = "2"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Mar'){
+				$Script:DateFromHeaderMonthNum = "3"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Apr'){
+				$Script:DateFromHeaderMonthNum = "4"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'May'){
+				$Script:DateFromHeaderMonthNum = "5"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Jun'){
+				$Script:DateFromHeaderMonthNum = "6"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Jul'){
+				$Script:DateFromHeaderMonthNum = "7"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Aug'){
+				$Script:DateFromHeaderMonthNum = "8"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Sep'){
+				$Script:DateFromHeaderMonthNum = "9"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Oct'){
+				$Script:DateFromHeaderMonthNum = "10"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Nov'){
+				$Script:DateFromHeaderMonthNum = "11"
+			}
+			If ($Script:DateFromHeaderMonth -eq 'Dec'){
+				$Script:DateFromHeaderMonthNum = "12"
+			}
+		$Script:DateFromHeaderFormatted = "$Script:DateFromHeaderMonthNum" + "/" + "$Script:DateFromHeaderDayOfMonth" + "/" + "$Script:DateFromHeaderYear"
         Write-Host "SADPhishes Found this Date in the Headers..." -ForegroundColor Yellow
         Write-Host $Script:DateFromHeader
+		Write-Host $Script:DateFromHeaderFormatted
         }
     }
     Write-Host "=======================================================" -ForegroundColor Yellow
-	
+UseParsedEmailHeadersSender	
+}
+
+#Function to give the user the option to use the Sender extracted from the headers, or specify their own
+Function UseParsedEmailHeadersSender{	
     Do{
         Write-Host "Do you want to use the Sender [$script:sender] as part of your search criteria? [Y]es or [N]o" -ForegroundColor Yellow
         $script:UseSenderFromHeaderFile = Read-Host -Prompt "Please answer the question with Y or N and press Enter to proceed."
         Switch ($script:UseSenderFromHeaderFile){
             'Y'{
-                Break
+                #$Script:Sender already set correctly
+				UseParsedEmailHeadersSubject
             }
             'N'{
                 $Script:Sender = Read-Host -Prompt "Please enter the exact Sender (From:) address of the Email you would like to search for"
-                Break
+                UseParsedEmailHeadersSubject
             }
 			'q'{
 				ClearSADPhishesVars
@@ -430,17 +322,21 @@ Function ParseEmailHeadersFile{
         }
     }
     Until ($Script:UseSenderFromHeaderFile -eq 'q')
-	
+}
+
+#Function to give the user the option to use the Subject extracted from the headers, or specify their own
+Function UseParsedEmailHeadersSubject{	
 	Do{
         Write-Host "Do you want to use the Subject [$script:subject] as part of your search criteria? [Y]es or [N]o" -ForegroundColor Yellow
         $script:UseSubjectFromHeaderFile = Read-Host -Prompt "Please answer the question with Y or N and press Enter to proceed."
         Switch ($script:UseSubjectFromHeaderFile){
             'Y'{
-                Break
+                #$Script:Subject already set correctly
+				UseParsedEmailHeadersDate
             }
             'N'{
                 $Script:Subject = Read-Host -Prompt "Please enter the exact Subject of the Email you would like to search for"
-                Break
+                UseParsedEmailHeadersDate
             }
 			'q'{
 				ClearSADPhishesVars
@@ -449,13 +345,34 @@ Function ParseEmailHeadersFile{
         }
     }
     Until ($Script:UseSubjectFromHeaderFile -eq 'q')
-	
+UseParsedEmailHeadersDate
+}	
+
+#Function for UseParsedEmailHeadersDate Menu Options Display
+Function UseParsedEmailHeadersDateOptions {
+	Write-Host "Email Headers Date Options Menu" -ForegroundColor Green
+	Write-Host "This Date was found in the Headers [$script:DateFromHeader]" -ForegroundColor Yellow
+	Write-Host "Please select an option from this menu to proceed..."
+	Write-Host "[1] Search for emails using only that date"
+	Write-Host "[2] Specify your own date range"
+	Write-Host "[3] Do not include a date in your search"
+}
+
+#Function to give the user the option to use the Date extracted from the headers, or specify their own
+Function UseParsedEmailHeadersDate{
 	Do{
-		Write-Host "This Date was found in the Headers [$script:DateFromHeader]" -ForegroundColor Yellow
-		Write-Host "Do you want to use that as a reference point and provide a Date Range as part of your search criteria? [Y]es or [N]o" -ForegroundColor Yellow
-		$Script:UseDateFromHeaderFile = Read-Host -Prompt "Please answer the question with Y or N and press Enter to proceed."
+		UseParsedEmailHeadersDateOptions
+		$Script:UseDateFromHeaderFile = Read-Host -Prompt "Please enter a selection from the menu (1, 2, or 3) and press Enter to proceed."
 		Switch ($Script:UseDateFromHeaderFile){
-			'Y'{
+			'1'{
+				$script:DateStart = $Script:DateFromHeaderFormatted
+				$script:DateEnd = $Script:DateFromHeaderFormatted
+				$script:DateRangeSeparator = ".."
+				$script:DateRange = $script:DateStart + $script:DateRangeSeparator + $script:DateEnd
+				$script:ContentMatchQuery = "(Received:$script:DateRange) AND (From:$script:Sender) AND (Subject:'$script:Subject')"
+				AttachmentNameMenu
+			}
+			'2'{
 				$script:DateStart = Read-Host -Prompt 'Please enter the Beginning Date for your Date Range in the form M/D/YYYY'
 				$script:DateEnd = Read-Host -Prompt 'Please enter the Ending Date for your Date Range in the form M/D/YYYY'
 				$script:DateRangeSeparator = ".."
@@ -463,7 +380,7 @@ Function ParseEmailHeadersFile{
 				$script:ContentMatchQuery = "(Received:$script:DateRange) AND (From:$script:Sender) AND (Subject:'$script:Subject')"
 				AttachmentNameMenu
 			}
-			'N'{
+			'3'{
 				$script:ContentMatchQuery = "(From:$script:Sender) AND (Subject:'$script:Subject')"
 				AttachmentNameMenu
 			}
@@ -568,7 +485,7 @@ Function ComplianceSearch {
 				$script:SearchName = "SADPhishes Pre-Built Suspicious Attachment Types Search Exchange Location [$script:ExchangeLocation]"
 			}
 			'8'{
-				$script:SearchName = "SADPhishes Headers Parsed Subject [$script:Subject] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+				$script:SearchName = "SADPhishes Headers Parsed Subject [$script:Subject] DateRange [$script:DateRange] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
 			}
 	}
 	#If an AttachmentName has been specified, Modify SearchName to include it.  
@@ -1093,6 +1010,187 @@ Function Get-FileName($initialDirectory){
 	$OpenFileDialog.filter = "All files (*.*)| *.*"
 	$OpenFileDialog.ShowDialog() | Out-Null
 	$OpenFileDialog.filename
+}
+
+
+#Function to Create all SADPhishes Vars and set to Null
+Function CreateSADPhishesNullVars {
+	$script:AttachmentName = $null
+	$script:AttachmentNameSelection = $null
+	$Script:ComplianceSearch = $null
+	$Script:ComplianceSearches = $null
+	$script:ContentMatchQuery = $null
+	$script:DangerousEDiscoverySearch = $null
+	$script:DangerousEDiscoverySearchQuitChoice = $null
+	$script:DangerousSearch = $null
+	$script:DateEnd = $null
+	$Script:DateHeaderMatches = $null
+	$Script:DateFromHeader = $null
+	$script:DateRange = $null
+	$script:DateRangeSeparator = $null
+	$script:DateStart = $null
+	$script:EDiscoverySearchMenuChoice = $null
+	$script:EDiscoverySearchName = $null
+	$script:EmailHeadersFile = $null
+	$script:EmailHeadersLine = $null
+	$script:EmailHeadersLines = $null
+	$script:ExchangeLocation = $null
+	$script:ExchangeSearchLocation = $null
+	$Script:FromHeaderMatches = $null
+	$script:LaunchEDiscoveryURL = $null
+	$script:mailboxes = $null
+	$script:MailboxSearch = $null
+	$script:MailboxSearches = $null
+	$script:MenuChoice = $null
+	$script:NoDeleteMenuChoice = $null
+	$script:PurgeName = $null
+	$script:PurgeSuffix = $null
+	$script:SearchName = $null
+	$script:SearchType = $null
+	$script:Sender = $null
+	$script:Subject = $null
+	$Script:SubjectHeaderMatches = $null
+	$Script:ThisComplianceSearchRun = $null
+	$script:ThisEDiscoverySearch = $null
+	$script:ThisEDiscoverySearchName = $null
+	$script:ThisEDiscoverySearchPreviewURL = $null
+	$script:ThisEDiscoverySearchRun = $null
+	$script:ThisPurge = $null
+	$script:ThisSearch = $null
+	$script:ThisSearchResults = $null
+	$script:ThisSearchResultsLine = $null
+	$script:ThisSearchResultsLines = $null
+	$script:TimeStamp = $null
+	$Script:UseDateFromHeaderFile = $null
+	$Script:UseSenderFromHeaderFile = $null
+	$Script:UseSubjectFromHeaderFile = $null
+	$Script:DateFromHeader = $null
+	$Script:DateFromHeaderDayOfWeek = $null
+	$Script:DateFromHeaderDayOfMonth = $null
+	$Script:DateFromHeaderMonth = $null
+	$Script:DateFromHeaderYear = $null
+	$Script:DateFromHeaderMonthNum = $null
+	$Script:DateFromHeaderFormatted = $null
+}
+
+#Function to clear all of the Vars set by SADPhishes
+Function ClearSADPhishesVars {
+	Clear-Variable -Name AttachmentName -Scope Script
+	Clear-Variable -Name AttachmentNameSelection -Scope Script
+	Clear-Variable -Name ComplianceSearch -Scope Script
+	Clear-Variable -Name ComplianceSearches -Scope Script
+	Clear-Variable -Name ContentMatchQuery -Scope Script
+	Clear-Variable -Name DangerousEDiscoverySearch -Scope Script
+	Clear-Variable -Name DangerousEDiscoverySearchQuitChoice -Scope Script
+	Clear-Variable -Name DangerousSearch -Scope Script
+	Clear-Variable -Name DateEnd -Scope Script
+	Clear-Variable -Name DateFromHeader -Scope Script
+	Clear-Variable -Name DateHeaderMatches -Scope Script
+	Clear-Variable -Name DateRange -Scope Script
+	Clear-Variable -Name DateRangeSeparator -Scope Script
+	Clear-Variable -Name DateStart -Scope Script
+	Clear-Variable -Name EDiscoverySearchMenuChoice -Scope Script
+	Clear-Variable -Name EDiscoverySearchName -Scope Script
+	Clear-Variable -Name EmailHeadersFile -Scope Script
+	Clear-Variable -Name EmailHeadersLine -Scope Script
+	Clear-Variable -Name EmailHeadersLines -Scope Script
+	Clear-Variable -Name ExchangeLocation -Scope Script
+	Clear-Variable -Name ExchangeSearchLocation -Scope Script
+	Clear-Variable -Name FromHeaderMatches -Scope Script
+	Clear-Variable -Name LaunchEDiscoveryURL -Scope Script
+	Clear-Variable -Name mailboxes -Scope Script
+	Clear-Variable -Name MailboxSearch -Scope Script
+	Clear-Variable -Name MailboxSearches -Scope Script
+	Clear-Variable -Name MenuChoice -Scope Script
+	Clear-Variable -Name NoDeleteMenuChoice -Scope Script
+	Clear-Variable -Name PurgeName -Scope Script
+	Clear-Variable -Name PurgeSuffix -Scope Script
+	Clear-Variable -Name SearchName -Scope Script
+	Clear-Variable -Name SearchType -Scope Script
+	Clear-Variable -Name Sender -Scope Script
+	Clear-Variable -Name Subject -Scope Script
+	Clear-Variable -Name SubjectHeaderMatches -Scope Script
+	Clear-Variable -Name ThisComplianceSearchRun -Scope Script
+	Clear-Variable -Name ThisEDiscoverySearch -Scope Script
+	Clear-Variable -Name ThisEDiscoverySearchName -Scope Script
+	Clear-Variable -Name ThisEDiscoverySearchPreviewURL -Scope Script
+	Clear-Variable -Name ThisEDiscoverySearchRun -Scope Script
+	Clear-Variable -Name ThisPurge -Scope Script
+	Clear-Variable -Name ThisSearch -Scope Script
+	Clear-Variable -Name ThisSearchResults -Scope Script
+	Clear-Variable -Name ThisSearchResultsLine -Scope Script
+	Clear-Variable -Name ThisSearchResultsLines -Scope Script
+	Clear-Variable -Name TimeStamp -Scope Script
+	Clear-Variable -Name UseDateFromHeaderFile -Scope Script
+	Clear-Variable -Name UseSenderFromHeaderFile -Scope Script
+	Clear-Variable -Name UseSubjectFromHeaderFile -Scope Script
+	Clear-Variable -Name DateFromHeader -Scope Script
+	Clear-Variable -Name DateFromHeaderDayOfWeek -Scope Script
+	Clear-Variable -Name DateFromHeaderDayOfMonth -Scope Script
+	Clear-Variable -Name DateFromHeaderMonth -Scope Script
+	Clear-Variable -Name DateFromHeaderYear -Scope Script
+	Clear-Variable -Name DateFromHeaderMonthNum -Scope Script
+	Clear-Variable -Name DateFromHeaderFormatted -Scope Script
+}
+
+#Function to print all SADPhishes Vars
+Function PrintSADPhishesVars {
+	Write-Host AttachmentName [$script:AttachmentName]
+	Write-Host AttachmentNameSelection [$script:AttachmentNameSelection]
+	Write-Host ComplianceSearch [$script:ComplianceSearch]
+	Write-Host ComplianceSearches [$script:ComplianceSearches]
+	Write-Host ContentMatchQuery [$script:ContentMatchQuery]
+	Write-Host DangerousEDiscoverySearch [$script:DangerousEDiscoverySearch]
+	Write-Host DangerousEDiscoverySearchQuitChoice [$script:DangerousEDiscoverySearchQuitChoice]
+	Write-Host DangerousSearch [$script:DangerousSearch]
+	Write-Host DateEnd [$script:DateEnd]
+	Write-Host DateFromHeader [$script:DateFromHeader]
+	Write-Host DateHeaderMatches [$script:DateHeaderMatches]
+	Write-Host DateRange [$script:DateRange]
+	Write-Host DateRangeSeparator [$script:DateRangeSeparator]
+	Write-Host DateStart [$script:DateStart]
+	Write-Host EDiscoverySearchMenuChoice [$script:EDiscoverySearchMenuChoice]
+	Write-Host EDiscoverySearchName [$script:EDiscoverySearchName]
+	Write-Host EmailHeadersFile [$script:EmailHeadersFile]
+	Write-Host EmailHeadersLine [$script:EmailHeadersLine]
+	Write-Host EmailHeadersLines [$script:EmailHeadersLines]
+	Write-Host ExchangeLocation [$script:ExchangeLocation]
+	Write-Host ExchangeSearchLocation [$script:ExchangeSearchLocation]
+	Write-Host FromHeaderMatches [$script:FromHeaderMatches]
+	Write-Host LaunchEDiscoveryURL [$script:LaunchEDiscoveryURL]
+	Write-Host mailboxes [$script:mailboxes]
+	Write-Host MailboxSearch [$script:MailboxSearch]
+	Write-Host MailboxSearches [$script:MailboxSearches]
+	Write-Host MenuChoice [$script:MenuChoice]
+	Write-Host NoDeleteMenuChoice [$script:NoDeleteMenuChoice]
+	Write-Host PurgeName [$script:PurgeName]
+	Write-Host PurgeSuffix [$script:PurgeSuffix]
+	Write-Host SearchName [$script:SearchName]
+	Write-Host SearchType [$script:SearchType]
+	Write-Host Sender [$script:Sender]
+	Write-Host Subject [$script:Subject]
+	Write-Host SubjectHeaderMatches [$script:SubjectHeaderMatches]
+	Write-Host ThisComplianceSearchRun [$Script:ThisComplianceSearchRun]
+	Write-Host ThisEDiscoverySearch [$script:ThisEDiscoverySearch]
+	Write-Host ThisEDiscoverySearchName [$script:ThisEDiscoverySearchName]
+	Write-Host ThisEDiscoverySearchPreviewURL [$script:ThisEDiscoverySearchPreviewURL]
+	Write-Host ThisEDiscoverySearchRun [$script:ThisEDiscoverySearchRun]
+	Write-Host ThisPurge [$script:ThisPurge]
+	Write-Host ThisSearch [$script:ThisSearch]
+	Write-Host ThisSearchResults [$script:ThisSearchResults]
+	Write-Host ThisSearchResultsLine [$script:ThisSearchResultsLine]
+	Write-Host ThisSearchResultsLines [$script:ThisSearchResultsLines]
+	Write-Host TimeStamp [$script:TimeStamp]
+	Write-Host UseDateFromHeaderFile [$Script:UseDateFromHeaderFile]
+	Write-Host UseSenderFromHeaderFile [$script:UseSenderFromHeaderFile]
+	Write-Host UseSubjectFromHeaderFile [$script:UseSubjectFromHeaderFile]
+	Write-Host DateFromHeader [$script:DateFromHeader]
+	Write-Host DateFromHeaderDayOfWeek [$script:DateFromHeaderDayOfWeek]
+	Write-Host DateFromHeaderDayOfMonth [$script:DateFromHeaderDayOfMonth]
+	Write-Host DateFromHeaderMonth [$script:DateFromHeaderMonth]
+	Write-Host DateFromHeaderYear [$script:DateFromHeaderYear]
+	Write-Host DateFromHeaderMonthNum [$Script:DateFromHeaderMonthNum]
+	Write-Host DateFromHeaderFormatted [$Script:DateFromHeaderFormatted]
 }
 
 #Drop the user into the DisplayBanner function (and then Search Type Menu) to begin the process.
