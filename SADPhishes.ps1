@@ -15,6 +15,9 @@
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
 #=================
+#Version 1.0.9
+# Bug Fixes - after eDiscovery search was run, needed to change the way the user is prompted about launching the results in the browser, and the workflow after that.
+#=================
 #Version 1.0.8
 # Fixed some bugs with the header text file search options
 #=================
@@ -96,7 +99,7 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                              ________________________/ |  "
-	Write-Host "                                                             |@EdwardsCP v1.0.8 2018___/   "
+	Write-Host "                                                             |@EdwardsCP v1.0.9 2018___/   "
 	Write-Host "================================================================================================"
 	Start-Sleep -m 200
 	Write-Host "===============================================================" -ForegroundColor Yellow
@@ -230,27 +233,27 @@ Function SearchTypeMenu{
 
 #Function to Open a Text file containing email headers, parse each line to find the From:, Subject:, and Date: values, and output to the results.
 Function ParseEmailHeadersFile{
-    $script:EmailHeadersFile = Get-FileName
-    $script:EmailHeadersLines = Get-Content $Script:EmailHeadersFile
+	$script:EmailHeadersFile = Get-FileName
+	$script:EmailHeadersLines = Get-Content $Script:EmailHeadersFile
 	Write-Host "=======================================================" -ForegroundColor Yellow
-    Foreach ($script:EmailHeadersLine in $script:EmailHeadersLines){
-	    $Script:FromHeaderMatches = $script:EmailHeadersLine -match '^From:.*<(.*@.*)>$'
-        $Script:SubjectHeaderMatches = $script:EmailHeadersLine -match '^Subject: (.*)$'
+	Foreach ($script:EmailHeadersLine in $script:EmailHeadersLines){
+		$Script:FromHeaderMatches = $script:EmailHeadersLine -match '^From:.*<(.*@.*)>$'
+		$Script:SubjectHeaderMatches = $script:EmailHeadersLine -match '^Subject: (.*)$'
 		$Script:DateHeaderMatches = $script:EmailHeadersLine -match '^Date: (([a-zA-Z][a-zA-Z][a-zA-Z]), (\d\d) ([a-zA-Z][a-zA-Z][a-zA-Z]) (\d\d\d\d).*)$'
-	    If ($Script:FromHeaderMatches) {
-    		$Script:Sender = $matches[1]
-    	Write-Host "SADPhishes found this Sender Address..." -ForegroundColor Yellow
-        Write-Host $script:Sender
-        }
+		If ($Script:FromHeaderMatches) {
+			$Script:Sender = $matches[1]
+			Write-Host "SADPhishes found this Sender Address..." -ForegroundColor Yellow
+			Write-Host $script:Sender
+		}
         
-        If ($script:SubjectHeaderMatches){
-            $Script:Subject = $matches[1]
-        Write-Host "SADPhishes Found this Subject..." -ForegroundColor Yellow
-        Write-Host $Script:Subject
-        }
+		If ($script:SubjectHeaderMatches){
+			$Script:Subject = $matches[1]
+			Write-Host "SADPhishes Found this Subject..." -ForegroundColor Yellow
+			Write-Host $Script:Subject
+		}
 		
         If ($script:DateHeaderMatches){
-            $Script:DateFromHeader = $matches[1]
+			$Script:DateFromHeader = $matches[1]
 			$Script:DateFromHeaderDayOfWeek = $matches[2]
 			$Script:DateFromHeaderDayOfMonth = $matches[3]
 			$Script:DateFromHeaderMonth = $matches[4]
@@ -292,8 +295,8 @@ Function ParseEmailHeadersFile{
 				$Script:DateFromHeaderMonthNum = "12"
 			}
 		$Script:DateFromHeaderFormatted = "$Script:DateFromHeaderMonthNum" + "/" + "$Script:DateFromHeaderDayOfMonth" + "/" + "$Script:DateFromHeaderYear"
-        Write-Host "SADPhishes Found this Date in the Headers..." -ForegroundColor Yellow
-        Write-Host $Script:DateFromHeader
+		Write-Host "SADPhishes Found this Date in the Headers..." -ForegroundColor Yellow
+		Write-Host $Script:DateFromHeader
 		Write-Host $Script:DateFromHeaderFormatted
         }
     }
@@ -625,11 +628,12 @@ Function ThisSearchMailboxCount {
 			$script:mailboxes += $matches[1]; 
 		}
 	}
+	$script:MailboxesWithHitsCount = $script:mailboxes.count
 	Write-Host "Number of mailboxes that have Search Hits..."
 	Write-Host $script:mailboxes.Count -ForegroundColor Yellow
 	Write-Host "List of mailboxes that have Search Hits..."
 	write-Host $script:mailboxes -ForegroundColor Yellow
-	if ($script:mailboxes.Count -gt 499) {
+	if ($script:MailboxesWithHitsCount -gt 499) {
 		Write-Host "============WARNING - There are 500 or more Mailboxes with results!============" -ForegroundColor Red
 		Write-Host "Microsoft's Compliance Search can search everywhere, but only returns the top" -ForegroundColor Red
 		Write-Host "500 Mailboxes with the most hits that match the search!" -ForegroundColor Red
@@ -692,6 +696,13 @@ Function ShowMenu{
 								}
 								until ($script:ThisPurge.Status -match "Completed")
 							$script:ThisPurge | Format-List
+							Write-Host "Note: Microsoft's Compliance Search Purge Actions will remove a maximum of 10" -ForegroundColor Yellow
+							Write-Host "items per mailbox at one time.  They say it's designed that way because it's" -ForegroundColor Yellow
+							Write-Host "an Incident Response Tool and the limit helps ensure that messages are quickly" -ForegroundColor Yellow
+							Write-Host "removed." -ForegroundColor Yellow
+							Write-Host "The SADPhishes author believes that, in some IR scenarios, that makes sense." -ForegroundColor Yellow
+							Write-Host "In other scenarios, it's an unfortunate restriction that should have a bypass " -ForegroundColor Yellow
+							Write-host "method.  But, for now, we can't get around it." -ForegroundColor Yellow
 							Write-Host "The items have been deleted." -ForegroundColor Red
 							Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
 							ClearSADPhishesVars
@@ -914,26 +925,15 @@ Function ShowEDiscoverySearchMenu {
 										Start-Sleep 2
 										Start-Process -FilePath $script:ThisEDiscoverySearchPreviewURL
 										Read-Host -Prompt "After you finish viewing the search results, please press Enter to continue."
-										Break
+										ReturnToComplianceSearchActionsAfterEDiscoveryDone
 									}
 									'N'{
-									Break
+										ReturnToComplianceSearchActionsAfterEDiscoveryDone
 									}
 								}
 								
 							}
-							Until ($Script:LaunchEDiscoveryURL -ne '$null')
-							Write-Host "SADPhishes will now return to the Compliance Search Actions menu where you" -ForegroundColor Yellow
-							Write-Host "will have the option to delete all of the emails with Search Hits." -ForegroundColor Yellow
-							Write-Host "The eDiscovery Searches that were created during this session are not being" -ForegroundColor Yellow
-							Write-Host "deleted." -ForegroundColor Yellow
-							Read-Host "Please review all of the information above then press Enter to return to the Compliance Search Actions Menu."
-							#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-							if ($script:SearchType -match "7"){
-								ShowNoDeleteMenu
-							}
-							#If the search was any other type, show the regular Actions menu that allows Delete.
-							ShowMenu
+							Until ($Script:LaunchEDiscoveryURL -eq 'N')
 						}
 						'q'{
 							Write-Host "Proceeding to return to the Compliance Search Actions Menu..."
@@ -1002,6 +1002,21 @@ Function ShowEDiscoverySearchMenu {
 	Until ($script:EDiscoverySearchMenuChoice -eq 'q')
 }
 
+#Function to return to the Compliance Search Actions menu after an eDiscovery Search has been completed.
+Function ReturnToComplianceSearchActionsAfterEDiscoveryDone {
+	Write-Host "SADPhishes will now return to the Compliance Search Actions menu where you" -ForegroundColor Yellow
+	Write-Host "will have the option to delete all of the emails with Search Hits." -ForegroundColor Yellow
+	Write-Host "The eDiscovery Searches that were created during this session are not being" -ForegroundColor Yellow
+	Write-Host "deleted." -ForegroundColor Yellow
+	Read-Host "Please review all of the information above then press Enter to return to the Compliance Search Actions Menu."
+	#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
+	if ($script:SearchType -match "7"){
+		ShowNoDeleteMenu
+	}
+	#If the search was any other type, show the regular Actions menu that allows Delete.
+	ShowMenu
+}
+
 #Function to select a FileName to Open using a dialog box
 Function Get-FileName($initialDirectory){   
 	[System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
@@ -1041,6 +1056,7 @@ Function CreateSADPhishesNullVars {
 	$script:mailboxes = $null
 	$script:MailboxSearch = $null
 	$script:MailboxSearches = $null
+	$script:MailboxesWithHitsCount = $null
 	$script:MenuChoice = $null
 	$script:NoDeleteMenuChoice = $null
 	$script:PurgeName = $null
@@ -1101,6 +1117,7 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name mailboxes -Scope Script
 	Clear-Variable -Name MailboxSearch -Scope Script
 	Clear-Variable -Name MailboxSearches -Scope Script
+	Clear-Variable -Name MailboxesWithHitsCount -Scope Script
 	Clear-Variable -Name MenuChoice -Scope Script
 	Clear-Variable -Name NoDeleteMenuChoice -Scope Script
 	Clear-Variable -Name PurgeName -Scope Script
@@ -1161,6 +1178,7 @@ Function PrintSADPhishesVars {
 	Write-Host mailboxes [$script:mailboxes]
 	Write-Host MailboxSearch [$script:MailboxSearch]
 	Write-Host MailboxSearches [$script:MailboxSearches]
+	Write-Host MailboxesWithHitsCount [$script:MailboxesWithHitsCount]
 	Write-Host MenuChoice [$script:MenuChoice]
 	Write-Host NoDeleteMenuChoice [$script:NoDeleteMenuChoice]
 	Write-Host PurgeName [$script:PurgeName]
