@@ -113,7 +113,14 @@ Function DisplayBanner {
 	Write-Host "USE AT YOUR OWN RISK!                                          " -ForegroundColor Red
 	Write-Host "---------------------------------------------------------------" -ForegroundColor Red
 	Write-Host "---------------------------------------------------------------" -ForegroundColor Red
-	Write-Host "                                                               " -ForegroundColor Yellow
+	Write-Host "---------------------------------------------------------------" -ForegroundColor Yellow
+	Write-Host "Important Info:" -ForegroundColor Yellow
+	Write-Host "Microsoft's Compliance Search can search your entire environment, but will only return a maximum of 500 Mailboxes in the results." -ForegroundColor Yellow
+	Write-Host "Microsoft's Compliance Search Purge Action will purge a maximum of 10 Items per Mailbox." -ForegroundColor Yellow
+	Write-Host "Microsoft's Compliance Search Purge Action moves items to the user's Recoverable Items folder, and they will remain there based on the Retention Period that is configured for the mailbox." -ForegroundColor Yellow
+	Write-Host "Microsoft's Compliance Search results will return Items that were already purged (and are located in the Recoverable Items folder)." -ForegroundColor Yellow
+	Write-Host "Please consider those limitations when using SADPhishes." -ForegroundColor Yellow
+	Write-Host "---------------------------------------------------------------" -ForegroundColor Yellow
 	SearchTypeMenu
 	}
 
