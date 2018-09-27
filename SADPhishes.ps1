@@ -15,6 +15,9 @@
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
 #=================
+#Version 1.0.10
+# Added the option to list all existing Compliance Searches and select one to re-run (RunPreviousComplianceSearch Function)
+#=================
 #Version 1.0.9
 # Bug Fixes - after eDiscovery search was run, needed to change the way the user is prompted about launching the results in the browser, and the workflow after that.
 #=================
@@ -98,8 +101,8 @@ Function DisplayBanner {
 	Write-Host "  \___ \ / _ \/ _' | '__/ __| '_ \      / _ \/\    | |  | |/ _ \/ __| __| '__/ _ \| | | |  "
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
-	Write-Host "                                                              ________________________/ |  "
-	Write-Host "                                                             |@EdwardsCP v1.0.9 2018___/   "
+	Write-Host "                                                             _________________________/ |  "
+	Write-Host "                                                            |@EdwardsCP v1.0.10 2018___/   "
 	Write-Host "================================================================================================"
 	Start-Sleep -m 200
 	Write-Host "===============================================================" -ForegroundColor Yellow
@@ -128,19 +131,27 @@ Function DisplayBanner {
 Function SearchTypeOptions {
 	Write-Host "SEARCH OPTIONS MENU" -ForegroundColor Green
 	Write-Host "What type of search are you going to perform?" -ForegroundColor Yellow
-	Write-Host "[1] Subject and Sender Address and Date Range"
-	Write-Host "[2] Subject and Date Range"
-	Write-Host "[3] Subject and Sender Address"
-	Write-Host "[4] Subject Only"
-	Write-Host "[5] Sender Address Only (DANGEROUS)"
-	Write-Host "[6] Attachment Name Only"
-	Write-Host "[7] Pre-Built Suspicious Attachment Types Search"
-	Write-Host "[8] Extract Subject and Sender Address from a text file containing EMail Headers"
-	Write-Host "[Q] Quit"
-	Write-host "---Debugging Options---"
-	Write-Host "[X] gci variable:"
-	Write-Host "[Y] Print SADPhishesVars"
-	Write-Host "[Z] Clear SADPhishesVars"
+	Write-Host "---------- New Searches ----------"
+	Write-Host "    [1] Subject and Sender Address and Date Range"
+	Write-Host "    [2] Subject and Date Range"
+	Write-Host "    [3] Subject and Sender Address"
+	Write-Host "    [4] Subject Only"
+	Write-Host "    [5] Sender Address Only (DANGEROUS)"
+	Write-Host "    [6] Attachment Name Only"
+	Write-Host "    [7] Pre-Built Suspicious Attachment Types Search"
+	Write-Host "    [8] Extract Subject and Sender Address from a text file containing EMail Headers"
+	Write-Host " "
+	Write-Host "--- Execute Existing Searches ---"
+	Write-Host "    [10] View and Run an existing Compliance Search"
+	Write-Host " "
+	Write-host "------- Debugging Options -------"
+	Write-Host "    [X] gci variable:"
+	Write-Host "    [Y] Print SADPhishesVars"
+	Write-Host "    [Z] Clear SADPhishesVars"
+	Write-Host " "
+	Write-Host "------------- Quit --------------"
+	Write-Host "    [Q] Quit"
+	Write-Host "---------------------------------"
 }	
 	
 #Function for Search Type Menu
@@ -148,7 +159,7 @@ Function SearchTypeMenu{
 	Do {	
 		SearchTypeOptions
 		CreateSADPhishesNullVars
-		$script:SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, 3, 4, 5, 6, 7 or Q) and press Enter'
+		$script:SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1 - 8, 10, X, Y, Z, or Q) and press Enter'
 		switch ($script:SearchType){
 			'1'{
 				$script:Subject = Read-Host -Prompt 'Please enter the exact Subject of the Email you would like to search for'
@@ -219,6 +230,9 @@ Function SearchTypeMenu{
 				Write-Host "that will open when you proceed." -ForegroundColor Yellow
 				Read-Host -Prompt "After you have read the information above, Press Enter to proceed."
 				ParseEmailHeadersFile
+			}
+			'10'{
+				RunPreviousComplianceSearch
 			}
 			'q'{
 				Write-Host "Thanks for using SADPhishes!" -ForegroundColor Yellow
@@ -469,129 +483,164 @@ Function ExchangeSearchLocationMenu {
 	until ($script:SearchType -eq 'q')
 }
 
-#Function for the Compliance Search Creation and Execution
-Function ComplianceSearch {
-	#Set SearchName based on SearchType
-	switch ($script:SearchType){
-			'1'{
-				$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-			}
-			'2'{
-				$script:SearchName = "Remove Subject [$script:Subject] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-			}
-			'3'{
-				$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-			}
-			'4'{
-				$script:SearchName = "Remove Subject [$script:Subject] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-			}
-			'5'{
-				$script:SearchName = "Remove Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-			}
-			'6'{
-				$script:SearchName = "Remove Exchange Location [$script:ExchangeLocation] Phishing Message"
-			}
-			'7'{
-				$script:SearchName = "SADPhishes Pre-Built Suspicious Attachment Types Search Exchange Location [$script:ExchangeLocation]"
-			}
-			'8'{
-				$script:SearchName = "SADPhishes Headers Parsed Subject [$script:Subject] DateRange [$script:DateRange] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-			}
-	}
-	#If an AttachmentName has been specified, Modify SearchName to include it.  
-	if ($script:AttachmentName -ne $null){
-		$script:SearchName = $script:SearchName + " with Attachment [" + $script:AttachmentName + "]"
-		# If a ContentMatchQuery is already set, modify $script:ContentMatchQuery to include the attachment.
-		If ($script:ContentMatchQuery -ne $null){
-		$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName') AND " + $script:ContentMatchQuery
+Function RunPreviousComplianceSearch {
+	#create an empty array for existing ComplianceSearches
+	$script:ComplianceSearches = @()
+	#set up an Integer to use for tagging each existing Compliance Search with a number
+	$I = 1
+	$script:ComplianceSearches = Get-ComplianceSearch
+	#For every Compliance Search found, add a NoteProperty named Search number, assign it with our integer, and then increase the Integer by 1 so it's ready for the next Compliance Search in the array.
+	$Script:ComplianceSearches | %{$_ | Add-Member -NotePropertyName SearchNumber -NotePropertyValue $I -Force; $I++}
+	#set the Integer back to 1 so we can display a list of existing Compliance Searches with the SearchNumber in a bracket so it's displayed similar to our other menus.
+	$I = 1
+		foreach ($script:ComplianceSearch in $script:ComplianceSearches){
+			Write-Host [$I] $Script:ComplianceSearch.Name
+			$I++
 		}
-		# If an AttachmentName has been specified, and a ContentMatchQuery is NOT already set, set the ContentMatchQuery.
-		If ($script:ContentMatchQuery -eq $null){
-		$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName')"
-		}
-	}	
-	
-	## Timestamp the SearchName (to make it unique), then Create and Execute a New Compliance Search based on the user set Variables
-	#$script:TimeStamp = Get-Date -Format o | foreach {$_ -replace ":", "."} #Timestamp for search name not used anymore, but leaving the var here for now.
-	#$script:SearchName = $script:SearchName + " " + $script:TimeStamp
-	
-	# Name the Compliance Search using the Name that has been built using the search criteria, followed by an integer. To handle repeat searches of matching criteria, increase the integer until you hit a Search name that doesn't already exit.
-	$I = 1;
-	$Script:ComplianceSearches = Get-ComplianceSearch;
-		while ($true){
-			$found = $false
-			$script:ThisComplianceSearchRun = "$script:SearchName$I"
-			foreach ($Script:ComplianceSearch in $Script:ComplianceSearches){
-				if ($Script:ComplianceSearch.Name -eq $Script:ThisComplianceSearchRun){
-					$found = $true;
-					break;
-				}
-			}
-			if (!$found){
-				break;
-			}
-			$I++;
-		}
-	$Script:SearchName = "$Script:SearchName$I"
-	# If the Compliance SearchName is >200 characters, prompt the user to supply a new SearchName, then append an Integer. To handle repeat searches with the same user-defined name, increase the integer until you hit a Search name that doesn't already exist.
-	Do {
-		If ($Script:SearchName.length -gt 200) {
-			Write-Host "============WARNING - The Search Name is too long!============" -ForegroundColor Red
-			Write-Host "============WARNING - The Search Name is too long!============" -ForegroundColor Red
-			Write-Host "============WARNING - The Search Name is too long!============" -ForegroundColor Red
-			Write-Host "This Search Name for your Compliance Search..."
-			Write-Host $Script:SearchName -ForegroundColor Yellow
-			Write-Host "...is this many Characters in length..."
-			Write-Host $Script:SearchName.length -ForegroundColor Yellow
-			Write-Host "...and that is greater than the 200 Characters that Microsoft allows."
-			Write-Host "Please supply a new Search Name so that SADPhishes can proceed."
-			$Script:SearchName = Read-Host -Prompt "After reading the information above, please enter a new Search Name that is less than 198 Characters."
-			$I = 1;
-			$Script:ComplianceSearches = Get-ComplianceSearch;
-				while ($true){
-					$found = $false
-					$script:ThisComplianceSearchRun = "$script:SearchName$I"
-					foreach ($Script:ComplianceSearch in $Script:ComplianceSearches){
-						if ($Script:ComplianceSearch.Name -eq $Script:ThisComplianceSearchRun){
-							$found = $true;
-							break;
-						}
-					}
-					if (!$found){
-						break;
-					}
-					$I++;
-				}
-			$Script:SearchName = "$Script:SearchName$I"
-		}
-	}
-	Until ($Script:SearchName.length -le 200)
+	#after looking through all of the Compliance Searches in the array, decrease the Integer by 1 so that we can display the last used value in the instruction below.
+	$I--
+	$Script:ComplianceSearchNumberSelection = Read-Host -Prompt "Please select enter a selection from above (1 - $I), and Press Enter to continue"
+	#set up variables so our ComplianceSearch Function will run
+	$Script:SelectedComplianceSearch = $Script:ComplianceSearches | Where {$_.SearchNumber -eq $Script:ComplianceSearchNumberSelection}
+	$script:SearchName = $Script:SelectedComplianceSearch.Name
+	$Script:ContentMatchQuery = $script:SelectedComplianceSearch.ContentMatchQuery
+	$Script:ExchangeLocation = $script:SelectedComplianceSearch.ExchangeLocation
 	Write-Host "==========================================================================="
-	Write-Host "Creating a new Compliance Search with the name..."
+	Write-Host "Re-Running the existing Compliance Search named... "
 	Write-Host $script:SearchName -ForegroundColor Yellow
-	Write-Host "...using the query..."
+	Write-Host "...containing the query..."
 	Write-Host $script:ContentMatchQuery -ForegroundColor Yellow
 	Write-Host "==========================================================================="
-	
-	#If a Subject was specified, warn the user about Microsoft returning results with additional text before or after the subject that was defined.
-	if ($script:Subject -ne $null){
-		Write-Host "===========================================================================" -ForegroundColor Yellow
-		Write-Host "Warning: Your Compliance Search contained a Subject [$script:Subject]."             -ForegroundColor Yellow
-		Write-Host "When you use the Subject property in a query, the search returns all"        -ForegroundColor Yellow
-		Write-Host "messages in which the subject line contains the text you are searching for." -ForegroundColor Yellow
-		Write-Host "The query doesn't only return exact matches.  For example, if you search"    -ForegroundColor Yellow
-		Write-Host "(Subject:SADPhishes), your results will include messages with the subject"   -ForegroundColor Yellow
-		Write-Host "'SADPhishes', but also messages with the subjects 'SADPhishes is good!' and" -ForegroundColor Yellow
-		Write-Host "'RE: Screw SADPhishes. it sucks!'"                                           -ForegroundColor Yellow
-		Write-Host " "                                                                           -ForegroundColor Yellow
-		Write-Host "This is just how the Microsoft Exchange Content Search works."               -ForegroundColor Yellow
-		Write-Host " "                                                                           -ForegroundColor Yellow
-		Write-Host "Please take this into consideration when using the Search Results."          -ForegroundColor Yellow
-		Write-Host "===========================================================================" -ForegroundColor Yellow
-		Read-Host -Prompt "Please press Enter after reading the warning above."
-	}
-	
-	New-ComplianceSearch -Name "$script:SearchName" -ExchangeLocation $script:ExchangeLocation -ContentMatchQuery $script:ContentMatchQuery
+	Get-ComplianceSearch -Identity "$script:SearchName"
+	ComplianceSearch
+}
+
+#Function for the Compliance Search Creation and Execution
+Function ComplianceSearch {
+	# If SelectedComplianceSearch (used to re-run an existing search) is Null, go through the full process of creating a Searchname, Checking name length, notifying about subjects being wildcard searches, and creating the search.  Otherwise, bypass all that and get right to running the existing search.
+	If ($Script:SelectedComplianceSearch -eq $null){
+		#Set SearchName based on SearchType
+		switch ($script:SearchType){
+				'1'{
+					$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+				}
+				'2'{
+					$script:SearchName = "Remove Subject [$script:Subject] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+				}
+				'3'{
+					$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+				}
+				'4'{
+					$script:SearchName = "Remove Subject [$script:Subject] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+				}
+				'5'{
+					$script:SearchName = "Remove Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+				}
+				'6'{
+					$script:SearchName = "Remove Exchange Location [$script:ExchangeLocation] Phishing Message"
+				}
+				'7'{
+					$script:SearchName = "SADPhishes Pre-Built Suspicious Attachment Types Search Exchange Location [$script:ExchangeLocation]"
+				}
+				'8'{
+					$script:SearchName = "SADPhishes Headers Parsed Subject [$script:Subject] DateRange [$script:DateRange] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+				}
+		}
+		#If an AttachmentName has been specified, Modify SearchName to include it.  
+		if ($script:AttachmentName -ne $null){
+			$script:SearchName = $script:SearchName + " with Attachment [" + $script:AttachmentName + "]"
+			# If a ContentMatchQuery is already set, modify $script:ContentMatchQuery to include the attachment.
+			If ($script:ContentMatchQuery -ne $null){
+			$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName') AND " + $script:ContentMatchQuery
+			}
+			# If an AttachmentName has been specified, and a ContentMatchQuery is NOT already set, set the ContentMatchQuery.
+			If ($script:ContentMatchQuery -eq $null){
+			$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName')"
+			}
+		}	
+		
+		## Timestamp the SearchName (to make it unique), then Create and Execute a New Compliance Search based on the user set Variables
+		#$script:TimeStamp = Get-Date -Format o | foreach {$_ -replace ":", "."} #Timestamp for search name not used anymore, but leaving the var here for now.
+		#$script:SearchName = $script:SearchName + " " + $script:TimeStamp
+		
+		# Name the Compliance Search using the Name that has been built using the search criteria, followed by an integer. To handle repeat searches of matching criteria, increase the integer until you hit a Search name that doesn't already exit.
+		$I = 1;
+		$Script:ComplianceSearches = Get-ComplianceSearch;
+			while ($true){
+				$found = $false
+				$script:ThisComplianceSearchRun = "$script:SearchName$I"
+				foreach ($Script:ComplianceSearch in $Script:ComplianceSearches){
+					if ($Script:ComplianceSearch.Name -eq $Script:ThisComplianceSearchRun){
+						$found = $true;
+						break;
+					}
+				}
+				if (!$found){
+					break;
+				}
+				$I++;
+			}
+		$Script:SearchName = "$Script:SearchName$I"
+		# If the Compliance SearchName is >200 characters, prompt the user to supply a new SearchName, then append an Integer. To handle repeat searches with the same user-defined name, increase the integer until you hit a Search name that doesn't already exist.
+		Do {
+			If ($Script:SearchName.length -gt 200) {
+				Write-Host "============WARNING - The Search Name is too long!============" -ForegroundColor Red
+				Write-Host "============WARNING - The Search Name is too long!============" -ForegroundColor Red
+				Write-Host "============WARNING - The Search Name is too long!============" -ForegroundColor Red
+				Write-Host "This Search Name for your Compliance Search..."
+				Write-Host $Script:SearchName -ForegroundColor Yellow
+				Write-Host "...is this many Characters in length..."
+				Write-Host $Script:SearchName.length -ForegroundColor Yellow
+				Write-Host "...and that is greater than the 200 Characters that Microsoft allows."
+				Write-Host "Please supply a new Search Name so that SADPhishes can proceed."
+				$Script:SearchName = Read-Host -Prompt "After reading the information above, please enter a new Search Name that is less than 198 Characters."
+				$I = 1;
+				$Script:ComplianceSearches = Get-ComplianceSearch;
+					while ($true){
+						$found = $false
+						$script:ThisComplianceSearchRun = "$script:SearchName$I"
+						foreach ($Script:ComplianceSearch in $Script:ComplianceSearches){
+							if ($Script:ComplianceSearch.Name -eq $Script:ThisComplianceSearchRun){
+								$found = $true;
+								break;
+							}
+						}
+						if (!$found){
+							break;
+						}
+						$I++;
+					}
+				$Script:SearchName = "$Script:SearchName$I"
+			}
+		}
+		Until ($Script:SearchName.length -le 200)
+		Write-Host "==========================================================================="
+		Write-Host "Creating a new Compliance Search with the name..."
+		Write-Host $script:SearchName -ForegroundColor Yellow
+		Write-Host "...using the query..."
+		Write-Host $script:ContentMatchQuery -ForegroundColor Yellow
+		Write-Host "==========================================================================="
+		
+		#If a Subject was specified, warn the user about Microsoft returning results with additional text before or after the subject that was defined.
+		if ($script:Subject -ne $null){
+			Write-Host "===========================================================================" -ForegroundColor Yellow
+			Write-Host "Warning: Your Compliance Search contained a Subject [$script:Subject]."             -ForegroundColor Yellow
+			Write-Host "When you use the Subject property in a query, the search returns all"        -ForegroundColor Yellow
+			Write-Host "messages in which the subject line contains the text you are searching for." -ForegroundColor Yellow
+			Write-Host "The query doesn't only return exact matches.  For example, if you search"    -ForegroundColor Yellow
+			Write-Host "(Subject:SADPhishes), your results will include messages with the subject"   -ForegroundColor Yellow
+			Write-Host "'SADPhishes', but also messages with the subjects 'SADPhishes is good!' and" -ForegroundColor Yellow
+			Write-Host "'RE: Screw SADPhishes. it sucks!'"                                           -ForegroundColor Yellow
+			Write-Host " "                                                                           -ForegroundColor Yellow
+			Write-Host "This is just how the Microsoft Exchange Content Search works."               -ForegroundColor Yellow
+			Write-Host " "                                                                           -ForegroundColor Yellow
+			Write-Host "Please take this into consideration when using the Search Results."          -ForegroundColor Yellow
+			Write-Host "===========================================================================" -ForegroundColor Yellow
+			Read-Host -Prompt "Please press Enter after reading the warning above."
+		
+		}
+		New-ComplianceSearch -Name "$script:SearchName" -ExchangeLocation $script:ExchangeLocation -ContentMatchQuery $script:ContentMatchQuery
+	}	
 	Start-ComplianceSearch -Identity "$script:SearchName"
 	Get-ComplianceSearch -Identity "$script:SearchName"
 	#Display status, then results of Compliance Search
@@ -660,13 +709,14 @@ Function MenuOptions{
 	Write-Host "[2] Delete the Items (move them to Deleted Recoverable Items). WARNING: No automated way to restore them!"
 	Write-Host "[3] Create an Exchange In-Place eDiscovery Search from the Compliance Search results."
 	Write-Host "[4] Delete this search and Return to the Search Options Menu."
+	Write-Host "[5] Return to the Search Options Menu."
 	}
 	
 #Function for full action menu
 Function ShowMenu{
 	Do{
 		MenuOptions
-		$script:MenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or 3), and press Enter'
+		$script:MenuChoice = Read-Host -Prompt 'Please enter a selection from the menu (1 - 5), and press Enter'
 		switch ($script:MenuChoice){
 			'1'{
 			$script:ThisSearch | Format-List
@@ -692,7 +742,7 @@ Function ShowMenu{
 							$script:PurgeSuffix = "_purge"
 							$script:PurgeName = $script:SearchName + $script:PurgeSuffix
 							Write-Host "==========================================================================="
-							Write-Host "Creating a new Compliance Search Purge Action with the name..."
+							Write-Host "Creating/Running a Compliance Search Purge Action with the name..."
 							Write-Host $script:PurgeName -ForegroundColor Yellow
 							Write-Host "==========================================================================="
 							New-ComplianceSearchAction -SearchName "$script:SearchName" -Purge -PurgeType SoftDelete
@@ -703,14 +753,59 @@ Function ShowMenu{
 								}
 								until ($script:ThisPurge.Status -match "Completed")
 							$script:ThisPurge | Format-List
+							$script:ThisPurgeResults = $script:ThisPurge.Results
+							#commented out - problems with the matching when ThisPurge.Results contains details for multiple mailboxes (if more than 1 was included in Search Results)...it rolls to new lines so the matches don't work because the final } is not on the same line.  Will review this sometime in the future.
+							#$Script:ThisPurgeResultsMatches = $script:ThisPurgeResults -match '^Purge Type: SoftDelete; Item count: (\d*); Total size (\d*); Details: {(.*)}$'
+							$Script:ThisPurgeResultsMatches = $script:ThisPurgeResults -match 'Purge Type: SoftDelete; Item count: (\d*); Total size (\d*);.*'
+							If ($script:ThisPurgeResultsMatches){
+								$Script:ThisPurgeResultsItemCount = $matches[1]
+								$Script:ThisPurgeResultsTotalSize = $matches[2]
+							#commented out - see note above
+							#	$Script:ThisPurgeResultsDetails = $matches[3]
+								}
+							Write-Host "==========================================================="
+							Write-Host "SADPhishes Purged this many Items..."
+							Write-Host $Script:ThisPurgeResultsItemCount -ForegroundColor Yellow
+							Write-Host "...with a total size of..."
+							Write-Host $Script:ThisPurgeResultsTotalSize -ForegroundColor Yellow
+							#commented out - see note above
+							#Write-Host "Potentially useful details below..."
+							#Write-host $Script:ThisPurgeResultsDetails -ForegroundColor Yellow
+							Write-Host "==========================================================="
+							#
+							# CONTINUE HERE.  IF $Script:ThisPurgeResultsItemCount is not 0, get this to loop through until it is 0.
+							#
+							#
+							#
+							#
+							If ($script:ThisPurgeResultsItemCount -eq "0"){
+									Write-Host "SADPhishes did not find any items to delete!" -ForegroundColor Red
+									Write-Host "SADPhishes did not find any items to delete!" -ForegroundColor Red
+									Write-Host "SADPhishes did not find any items to delete!" -ForegroundColor Red
+									Write-Host "The initial Compliance Search returned this many items...  "
+									Write-Host $script:ThisSearch.Items Items -ForegroundColor Yellow
+									Write-Host "...but the Delete/Purge occurred on this many items..."
+									Write-Host $Script:ThisPurgeResultsItemCount -ForegroundColor Yellow
+									Write-Host "That should be an indication that all of the Items returned by the Compliance Search are already located in the Deleted Recoverable Items folder of each Mailbox!" -ForegroundColor Yellow
+									Write-Host "==========================================================="
+									Write-Host "You can use the In-Place eDiscovery Search (option 3 presented in the SADPhishes Compliance Search Actions Menu, after the initial search is run) to confirm if that is true."
+									Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
+									ClearSADPhishesVars
+									SearchTypeMenu
+								}					
+							Write-host "==================================================================================="
 							Write-Host "Note: Microsoft's Compliance Search Purge Actions will remove a maximum of 10" -ForegroundColor Yellow
 							Write-Host "items per mailbox at one time.  They say it's designed that way because it's" -ForegroundColor Yellow
 							Write-Host "an Incident Response Tool and the limit helps ensure that messages are quickly" -ForegroundColor Yellow
 							Write-Host "removed." -ForegroundColor Yellow
 							Write-Host "The SADPhishes author believes that, in some IR scenarios, that makes sense." -ForegroundColor Yellow
 							Write-Host "In other scenarios, it's an unfortunate restriction that should have a bypass " -ForegroundColor Yellow
-							Write-host "method.  But, for now, we can't get around it." -ForegroundColor Yellow
-							Write-Host "The items have been deleted." -ForegroundColor Red
+							Write-host "method.  We have tested looping purges until the Purged Item count hits 0, but" -ForegroundColor Yellow
+							Write-host "haven't found a consistent way to get it to work from this same SADPhishes session." -ForegroundColor Yellow
+							Write-host "==================================================================================="
+							Write-host "If you think this Purge may have left items behind, you should run another Search" -ForegroundColor Yellow
+							Write-host "and Delete/Purge until the Item count displayed above is 0." -ForegroundColor Yellow
+							Write-Host "The current Purge is complete." -ForegroundColor Red
 							Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
 							ClearSADPhishesVars
 							SearchTypeMenu
@@ -731,6 +826,11 @@ Function ShowMenu{
 			Remove-ComplianceSearch -Identity $script:SearchName
 			Write-Host "The search has been deleted." -ForegroundColor Red
 			Read-Host -Prompt "Press Enter to Return to the Search Options Menu"
+			ClearSADPhishesVars
+			SearchTypeMenu
+			}
+			'5'{
+			Write-Host "The previous Compliance Search has not been deleted. Returning to the Search Options Menu" -ForegroundColor Red
 			ClearSADPhishesVars
 			SearchTypeMenu
 			}
@@ -918,9 +1018,13 @@ Function ShowEDiscoverySearchMenu {
 							Write-Host "The In-Place eDiscovery Search has completed."
 							Write-Host "You can use this URL to Preview the Results..." 
 							Write-Host $script:ThisEDiscoverySearchPreviewURL -ForegroundColor Yellow
+							Write-host "---------------------------------------------------------------------------"
 							Write-Host "If you need to Copy those results to a Discovery Mailbox, or Export them"
 							Write-Host "to a PST file, please use Exchange Administrative Center's Compliance "
 							Write-Host "Management In-Place eDiscovery workflow to proceed with those actions."
+							Write-Host "You might want to do that to confirm if any of the items in this search are" -ForegroundColor Yellow
+							Write-Host "located in the Deleted Recoverable Items folder.  The PST export generates a " -ForegroundColor Yellow
+							Write-Host "CSV file with that information." ForegroundColor Yellow
 							Write-Host "==========================================================================="
 							Do {
 								$Script:LaunchEDiscoveryURL = Read-Host -Prompt "Would you like to open the Results URL using your default browser? [Y]es or [N]o"
@@ -1041,6 +1145,7 @@ Function CreateSADPhishesNullVars {
 	$script:AttachmentNameSelection = $null
 	$Script:ComplianceSearch = $null
 	$Script:ComplianceSearches = $null
+	$Script:ComplianceSearchNumberSelection = $null
 	$script:ContentMatchQuery = $null
 	$script:DangerousEDiscoverySearch = $null
 	$script:DangerousEDiscoverySearchQuitChoice = $null
@@ -1070,6 +1175,7 @@ Function CreateSADPhishesNullVars {
 	$script:PurgeSuffix = $null
 	$script:SearchName = $null
 	$script:SearchType = $null
+	$Script:SelectedComplianceSearch = $null
 	$script:Sender = $null
 	$script:Subject = $null
 	$Script:SubjectHeaderMatches = $null
@@ -1102,6 +1208,7 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name AttachmentNameSelection -Scope Script
 	Clear-Variable -Name ComplianceSearch -Scope Script
 	Clear-Variable -Name ComplianceSearches -Scope Script
+	Clear-Variable -Name ComplianceSearchNumberSelection -scope Script
 	Clear-Variable -Name ContentMatchQuery -Scope Script
 	Clear-Variable -Name DangerousEDiscoverySearch -Scope Script
 	Clear-Variable -Name DangerousEDiscoverySearchQuitChoice -Scope Script
@@ -1131,6 +1238,7 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name PurgeSuffix -Scope Script
 	Clear-Variable -Name SearchName -Scope Script
 	Clear-Variable -Name SearchType -Scope Script
+	Clear-Variable -Name SelectedComplianceSearch -Scope Script
 	Clear-Variable -Name Sender -Scope Script
 	Clear-Variable -Name Subject -Scope Script
 	Clear-Variable -Name SubjectHeaderMatches -Scope Script
@@ -1163,6 +1271,7 @@ Function PrintSADPhishesVars {
 	Write-Host AttachmentNameSelection [$script:AttachmentNameSelection]
 	Write-Host ComplianceSearch [$script:ComplianceSearch]
 	Write-Host ComplianceSearches [$script:ComplianceSearches]
+	Write-Host ComplianceSearchNumberSelection [$script:ComplianceSearchNumberSelection]
 	Write-Host ContentMatchQuery [$script:ContentMatchQuery]
 	Write-Host DangerousEDiscoverySearch [$script:DangerousEDiscoverySearch]
 	Write-Host DangerousEDiscoverySearchQuitChoice [$script:DangerousEDiscoverySearchQuitChoice]
@@ -1193,6 +1302,7 @@ Function PrintSADPhishesVars {
 	Write-Host SearchName [$script:SearchName]
 	Write-Host SearchType [$script:SearchType]
 	Write-Host Sender [$script:Sender]
+	Write-Host SelectedComplianceSearch [$script:SelectedComplianceSearch]
 	Write-Host Subject [$script:Subject]
 	Write-Host SubjectHeaderMatches [$script:SubjectHeaderMatches]
 	Write-Host ThisComplianceSearchRun [$Script:ThisComplianceSearchRun]
