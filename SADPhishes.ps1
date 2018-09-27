@@ -15,6 +15,9 @@
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
 #=================
+#Version 1.0.11
+# Modified the search that extracts info from a Headers text file so that it would detect UTF-8 encoded subjects and convert them to plain text for executing the search.
+#=================
 #Version 1.0.10
 # Added the option to list all existing Compliance Searches and select one to re-run (RunPreviousComplianceSearch Function)
 #=================
@@ -102,7 +105,7 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                             _________________________/ |  "
-	Write-Host "                                                            |@EdwardsCP v1.0.10 2018___/   "
+	Write-Host "                                                            |@EdwardsCP v1.0.11 2018___/   "
 	Write-Host "================================================================================================"
 	Start-Sleep -m 200
 	Write-Host "===============================================================" -ForegroundColor Yellow
@@ -143,6 +146,7 @@ Function SearchTypeOptions {
 	Write-Host " "
 	Write-Host "--- Execute Existing Searches ---"
 	Write-Host "    [10] View and Run an existing Compliance Search"
+	#Write-Host "    [11] View and Run an existing eDiscovery Search"
 	Write-Host " "
 	Write-host "------- Debugging Options -------"
 	Write-Host "    [X] gci variable:"
@@ -234,6 +238,9 @@ Function SearchTypeMenu{
 			'10'{
 				RunPreviousComplianceSearch
 			}
+			#'11'{
+			#	RunPreviousEDiscoverySearch
+			#}
 			'q'{
 				Write-Host "Thanks for using SADPhishes!" -ForegroundColor Yellow
 				Exit
@@ -271,6 +278,21 @@ Function ParseEmailHeadersFile{
 			$Script:Subject = $matches[1]
 			Write-Host "SADPhishes Found this Subject..." -ForegroundColor Yellow
 			Write-Host $Script:Subject
+			#check to see if the subject is UTF-8 encoded, and extract plain text to use for search if it is.
+			If ($Script:Subject -match '^=\?UTF-8\?B\?(.*)\?\=$') {
+				$Script:SubjectB64Encode = $matches[1]
+				$Script:SubjectB64Decode = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String("$Script:SubjectB64Encode"))
+				Write-Host "========================================================================="
+				Write-Host "The Subject found in the Headers was UTF-8 Encoded instead of plain text."
+				Write-Host "Decoding this UTF-8 Encoded Subject..."
+				Write-Host $Script:Subject -ForegroundColor Yellow
+				Write-host "Base64 encoded string..."
+				Write-host $Script:SubjectB64Encode -ForegroundColor Yellow
+				Write-Host "Decoded plain text Subject for SADPhishes Search..."
+				Write-Host $Script:SubjectB64Decode -ForegroundColor Yellow
+				Write-Host "========================================================================="
+				$Script:Subject = $Script:SubjectB64Decode
+			}
 		}
 		
         If ($script:DateHeaderMatches){
@@ -483,7 +505,11 @@ Function ExchangeSearchLocationMenu {
 	until ($script:SearchType -eq 'q')
 }
 
+#Function to Re-Run a previous Compliance Search
 Function RunPreviousComplianceSearch {
+	Write-Host "SADPhishes is going to list all of the existing Compliance Searches" -ForegroundColor Yellow
+	Write-Host "They will be in the the format '[#] SearchNameHere', where # is the integer you will use to select which search to run." -ForegroundColor Yellow
+	Read-Host -Prompt "After reading the information above, Please press Enter to continue."
 	#create an empty array for existing ComplianceSearches
 	$script:ComplianceSearches = @()
 	#set up an Integer to use for tagging each existing Compliance Search with a number
@@ -499,7 +525,10 @@ Function RunPreviousComplianceSearch {
 		}
 	#after looking through all of the Compliance Searches in the array, decrease the Integer by 1 so that we can display the last used value in the instruction below.
 	$I--
-	$Script:ComplianceSearchNumberSelection = Read-Host -Prompt "Please select enter a selection from above (1 - $I), and Press Enter to continue"
+	Do {
+		$Script:ComplianceSearchNumberSelection = Read-Host -Prompt "Please enter a Search Number from the list above (1 - $I), and Press Enter to continue"
+	}
+	Until ($Script:ComplianceSearchNumberSelection -ge 1 -and $Script:ComplianceSearchNumberSelection -le $I)
 	#set up variables so our ComplianceSearch Function will run
 	$Script:SelectedComplianceSearch = $Script:ComplianceSearches | Where {$_.SearchNumber -eq $Script:ComplianceSearchNumberSelection}
 	$script:SearchName = $Script:SelectedComplianceSearch.Name
@@ -514,6 +543,39 @@ Function RunPreviousComplianceSearch {
 	Get-ComplianceSearch -Identity "$script:SearchName"
 	ComplianceSearch
 }
+
+#Function to Re-Run a previous eDiscovery Search. Commented out because this needs work.  When this gets handed off to the ShowEDiscoverysearchMenu function, that function and others further in the workflow require variables that assume you got there by first running a ComplianceSearch.
+#Function RunPreviousEDiscoverySearch {
+	##create an empty array for existing eDiscovery MailboxSearches
+	#$script:EDiscoverySearches = @()
+	##set up an Integer to use for tagging each existing eDiscovery Mailbox Search with a number
+	#$I = 1
+	#$script:EDiscoverySearches = Get-MailboxSearch
+	##For every eDiscovery Mailbox Search found, add a NoteProperty named Search number, assign it with our integer, and then increase the Integer by 1 so it's ready for the next Compliance Search #in the array.
+#	$Script:EDiscoverySearches | %{$_ | Add-Member -NotePropertyName SearchNumber -NotePropertyValue $I -Force; $I++}
+	##set the Integer back to 1 so we can display a list of existing eDiscovery Mailbox Searches with the SearchNumber in a bracket so it's displayed similar to our other menus.
+	#$I = 1
+		#foreach ($script:EDiscoverySearch in $script:EDiscoverySearches){
+			#Write-Host [$I] $Script:EDiscoverySearch.Name
+			#$I++
+		#}
+	##after looking through all of the eDiscovery Mailbox Searches in the array, decrease the Integer by 1 so that we can display the last used value in the instruction below.
+	#$I--
+	#$Script:EDiscoverySearchNumberSelection = Read-Host -Prompt "Please select enter a selection from above (1 - $I), and Press Enter to continue"
+	##set up variables so our ComplianceSearch Function will run
+	#$Script:SelectedEDiscoverySearch = $Script:EDiscoverySearches | Where {$_.SearchNumber -eq $Script:EDiscoverySearchNumberSelection}
+	#$script:EDiscoverySearchName = $Script:SelectedEDiscoverySearch.Name
+	#$script:ThisEDiscoverySearch = Get-MailboxSearch $script:EDiscoverySearchName
+	#Write-Host "==========================================================================="
+	#Write-Host "Loading the eDiscovery Search named... "
+	#Write-Host $Script:EDiscoverySearchName -ForegroundColor Yellow
+	#Write-Host "==========================================================================="
+	#Get-MailboxSearch -Identity "$Script:EDiscoverySearchName"
+#	
+	#Start-Sleep 1
+	#ShowEDiscoverySearchMenu
+#}
+
 
 #Function for the Compliance Search Creation and Execution
 Function ComplianceSearch {
@@ -960,9 +1022,10 @@ Function EDiscoverySearchMenuOptions{
 	Write-host "===================================================="
 	Write-Host "EDISCOVERY SEARCH ACTIONS MENU" -ForegroundColor Green
 	Write-host How would you like to proceed?
-	Write-Host "[1] Display the Detailed (Format-List) view of the new In-Place eDiscovery Search."
-	Write-Host "[2] Start the new In-Place eDiscovery Search. (Experimental)"
-	Write-Host "[3] Delete the new In-Place eDiscovery Search and return to the Compliance Search Actions Menu."
+	Write-Host "[1] Display the Detailed (Format-List) view of the In-Place eDiscovery Search."
+	Write-Host "[2] Start the In-Place eDiscovery Search. (Experimental)"
+	Write-Host "[3] Delete the In-Place eDiscovery Search and return to the Compliance Search Actions Menu."
+	Write-Host "[4] Return to the top level Search Options Menu"
 	}
 
 #Function for the eDiscovery Search Action menu
@@ -1096,6 +1159,11 @@ Function ShowEDiscoverySearchMenu {
 				#If the search was any other type, show the regular Actions menu that allows Delete.
 				ShowMenu
 			}
+			'4'{
+				Write-Host "The eDiscovery Search has not been deleted. Returning to the Search Options Menu." -ForegroundColor Red
+				ClearSADPhishesVars
+				SearchTypeMenu
+			}
 			
 			'q'{
 				Remove-MailboxSearch -Identity $script:ThisEDiscoverySearchName
@@ -1200,6 +1268,11 @@ Function CreateSADPhishesNullVars {
 	$Script:DateFromHeaderYear = $null
 	$Script:DateFromHeaderMonthNum = $null
 	$Script:DateFromHeaderFormatted = $null
+	$script:EDiscoverySearches = $null
+	$script:EDiscoverySearch = $null
+	$Script:EDiscoverySearchNumberSelection = $null
+	$Script:SelectedEDiscoverySearch = $null
+	$script:EDiscoverySearchName = $null
 }
 
 #Function to clear all of the Vars set by SADPhishes
@@ -1263,6 +1336,11 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name DateFromHeaderYear -Scope Script
 	Clear-Variable -Name DateFromHeaderMonthNum -Scope Script
 	Clear-Variable -Name DateFromHeaderFormatted -Scope Script
+	Clear-Variable -Name EDiscoverySearches -Scope Script
+	Clear-Variable -Name EDiscoverySearch -Scope Script
+	Clear-Variable -Name EDiscoverySearchNumberSelection -Scope Script
+	Clear-Variable -Name SelectedEDiscoverySearch -Scope Script
+	Clear-Variable -Name EDiscoverySearchName -Scope Script 
 }
 
 #Function to print all SADPhishes Vars
@@ -1326,6 +1404,11 @@ Function PrintSADPhishesVars {
 	Write-Host DateFromHeaderYear [$script:DateFromHeaderYear]
 	Write-Host DateFromHeaderMonthNum [$Script:DateFromHeaderMonthNum]
 	Write-Host DateFromHeaderFormatted [$Script:DateFromHeaderFormatted]
+	Write-Host EDiscoverySearches [$script:EDiscoverySearches]
+	Write-Host EDiscoverySearch [$script:EDiscoverySearch]
+	Write-Host EDiscoverySearchNumberSelection [$Script:EDiscoverySearchNumberSelection]
+	Write-Host SelectedEDiscoverySearch [$Script:SelectedEDiscoverySearch]
+	Write-Host EDiscoverySearchName [$script:EDiscoverySearchName]
 }
 
 #Drop the user into the DisplayBanner function (and then Search Type Menu) to begin the process.
