@@ -391,7 +391,7 @@ Function UseParsedEmailHeadersSubject{
         }
     }
     Until ($Script:UseSubjectFromHeaderFile -eq 'q')
-UseParsedEmailHeadersDate
+
 }	
 
 #Function for UseParsedEmailHeadersDate Menu Options Display
@@ -1219,13 +1219,24 @@ Function CreateSADPhishesNullVars {
 	$script:DangerousEDiscoverySearchQuitChoice = $null
 	$script:DangerousSearch = $null
 	$script:DateEnd = $null
-	$Script:DateHeaderMatches = $null
 	$Script:DateFromHeader = $null
+	$Script:DateFromHeader = $null
+	$Script:DateFromHeaderDayOfMonth = $null
+	$Script:DateFromHeaderDayOfWeek = $null
+	$Script:DateFromHeaderFormatted = $null
+	$Script:DateFromHeaderMonth = $null
+	$Script:DateFromHeaderMonthNum = $null
+	$Script:DateFromHeaderYear = $null
+	$Script:DateHeaderMatches = $null
 	$script:DateRange = $null
 	$script:DateRangeSeparator = $null
 	$script:DateStart = $null
+	$script:EDiscoverySearch = $null
+	$script:EDiscoverySearches = $null
 	$script:EDiscoverySearchMenuChoice = $null
 	$script:EDiscoverySearchName = $null
+	$script:EDiscoverySearchName = $null
+	$Script:EDiscoverySearchNumberSelection = $null
 	$script:EmailHeadersFile = $null
 	$script:EmailHeadersLine = $null
 	$script:EmailHeadersLines = $null
@@ -1234,9 +1245,9 @@ Function CreateSADPhishesNullVars {
 	$Script:FromHeaderMatches = $null
 	$script:LaunchEDiscoveryURL = $null
 	$script:mailboxes = $null
+	$script:MailboxesWithHitsCount = $null
 	$script:MailboxSearch = $null
 	$script:MailboxSearches = $null
-	$script:MailboxesWithHitsCount = $null
 	$script:MenuChoice = $null
 	$script:NoDeleteMenuChoice = $null
 	$script:PurgeName = $null
@@ -1244,6 +1255,7 @@ Function CreateSADPhishesNullVars {
 	$script:SearchName = $null
 	$script:SearchType = $null
 	$Script:SelectedComplianceSearch = $null
+	$Script:SelectedEDiscoverySearch = $null
 	$script:Sender = $null
 	$script:Subject = $null
 	$Script:SubjectHeaderMatches = $null
@@ -1261,18 +1273,6 @@ Function CreateSADPhishesNullVars {
 	$Script:UseDateFromHeaderFile = $null
 	$Script:UseSenderFromHeaderFile = $null
 	$Script:UseSubjectFromHeaderFile = $null
-	$Script:DateFromHeader = $null
-	$Script:DateFromHeaderDayOfWeek = $null
-	$Script:DateFromHeaderDayOfMonth = $null
-	$Script:DateFromHeaderMonth = $null
-	$Script:DateFromHeaderYear = $null
-	$Script:DateFromHeaderMonthNum = $null
-	$Script:DateFromHeaderFormatted = $null
-	$script:EDiscoverySearches = $null
-	$script:EDiscoverySearch = $null
-	$Script:EDiscoverySearchNumberSelection = $null
-	$Script:SelectedEDiscoverySearch = $null
-	$script:EDiscoverySearchName = $null
 }
 
 #Function to clear all of the Vars set by SADPhishes
@@ -1288,12 +1288,23 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name DangerousSearch -Scope Script
 	Clear-Variable -Name DateEnd -Scope Script
 	Clear-Variable -Name DateFromHeader -Scope Script
+	Clear-Variable -Name DateFromHeader -Scope Script
+	Clear-Variable -Name DateFromHeaderDayOfMonth -Scope Script
+	Clear-Variable -Name DateFromHeaderDayOfWeek -Scope Script
+	Clear-Variable -Name DateFromHeaderFormatted -Scope Script
+	Clear-Variable -Name DateFromHeaderMonth -Scope Script
+	Clear-Variable -Name DateFromHeaderMonthNum -Scope Script
+	Clear-Variable -Name DateFromHeaderYear -Scope Script
 	Clear-Variable -Name DateHeaderMatches -Scope Script
 	Clear-Variable -Name DateRange -Scope Script
 	Clear-Variable -Name DateRangeSeparator -Scope Script
 	Clear-Variable -Name DateStart -Scope Script
+	Clear-Variable -Name EDiscoverySearch -Scope Script
+	Clear-Variable -Name EDiscoverySearches -Scope Script
 	Clear-Variable -Name EDiscoverySearchMenuChoice -Scope Script
 	Clear-Variable -Name EDiscoverySearchName -Scope Script
+	Clear-Variable -Name EDiscoverySearchName -Scope Script 
+	Clear-Variable -Name EDiscoverySearchNumberSelection -Scope Script
 	Clear-Variable -Name EmailHeadersFile -Scope Script
 	Clear-Variable -Name EmailHeadersLine -Scope Script
 	Clear-Variable -Name EmailHeadersLines -Scope Script
@@ -1302,9 +1313,9 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name FromHeaderMatches -Scope Script
 	Clear-Variable -Name LaunchEDiscoveryURL -Scope Script
 	Clear-Variable -Name mailboxes -Scope Script
+	Clear-Variable -Name MailboxesWithHitsCount -Scope Script
 	Clear-Variable -Name MailboxSearch -Scope Script
 	Clear-Variable -Name MailboxSearches -Scope Script
-	Clear-Variable -Name MailboxesWithHitsCount -Scope Script
 	Clear-Variable -Name MenuChoice -Scope Script
 	Clear-Variable -Name NoDeleteMenuChoice -Scope Script
 	Clear-Variable -Name PurgeName -Scope Script
@@ -1312,6 +1323,7 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name SearchName -Scope Script
 	Clear-Variable -Name SearchType -Scope Script
 	Clear-Variable -Name SelectedComplianceSearch -Scope Script
+	Clear-Variable -Name SelectedEDiscoverySearch -Scope Script
 	Clear-Variable -Name Sender -Scope Script
 	Clear-Variable -Name Subject -Scope Script
 	Clear-Variable -Name SubjectHeaderMatches -Scope Script
@@ -1329,18 +1341,6 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name UseDateFromHeaderFile -Scope Script
 	Clear-Variable -Name UseSenderFromHeaderFile -Scope Script
 	Clear-Variable -Name UseSubjectFromHeaderFile -Scope Script
-	Clear-Variable -Name DateFromHeader -Scope Script
-	Clear-Variable -Name DateFromHeaderDayOfWeek -Scope Script
-	Clear-Variable -Name DateFromHeaderDayOfMonth -Scope Script
-	Clear-Variable -Name DateFromHeaderMonth -Scope Script
-	Clear-Variable -Name DateFromHeaderYear -Scope Script
-	Clear-Variable -Name DateFromHeaderMonthNum -Scope Script
-	Clear-Variable -Name DateFromHeaderFormatted -Scope Script
-	Clear-Variable -Name EDiscoverySearches -Scope Script
-	Clear-Variable -Name EDiscoverySearch -Scope Script
-	Clear-Variable -Name EDiscoverySearchNumberSelection -Scope Script
-	Clear-Variable -Name SelectedEDiscoverySearch -Scope Script
-	Clear-Variable -Name EDiscoverySearchName -Scope Script 
 }
 
 #Function to print all SADPhishes Vars
@@ -1356,12 +1356,23 @@ Function PrintSADPhishesVars {
 	Write-Host DangerousSearch [$script:DangerousSearch]
 	Write-Host DateEnd [$script:DateEnd]
 	Write-Host DateFromHeader [$script:DateFromHeader]
+	Write-Host DateFromHeader [$script:DateFromHeader]
+	Write-Host DateFromHeaderDayOfMonth [$script:DateFromHeaderDayOfMonth]
+	Write-Host DateFromHeaderDayOfWeek [$script:DateFromHeaderDayOfWeek]
+	Write-Host DateFromHeaderFormatted [$Script:DateFromHeaderFormatted]
+	Write-Host DateFromHeaderMonth [$script:DateFromHeaderMonth]
+	Write-Host DateFromHeaderMonthNum [$Script:DateFromHeaderMonthNum]
+	Write-Host DateFromHeaderYear [$script:DateFromHeaderYear]
 	Write-Host DateHeaderMatches [$script:DateHeaderMatches]
 	Write-Host DateRange [$script:DateRange]
 	Write-Host DateRangeSeparator [$script:DateRangeSeparator]
 	Write-Host DateStart [$script:DateStart]
+	Write-Host EDiscoverySearch [$script:EDiscoverySearch]
+	Write-Host EDiscoverySearches [$script:EDiscoverySearches]
 	Write-Host EDiscoverySearchMenuChoice [$script:EDiscoverySearchMenuChoice]
 	Write-Host EDiscoverySearchName [$script:EDiscoverySearchName]
+	Write-Host EDiscoverySearchName [$script:EDiscoverySearchName]
+	Write-Host EDiscoverySearchNumberSelection [$Script:EDiscoverySearchNumberSelection]
 	Write-Host EmailHeadersFile [$script:EmailHeadersFile]
 	Write-Host EmailHeadersLine [$script:EmailHeadersLine]
 	Write-Host EmailHeadersLines [$script:EmailHeadersLines]
@@ -1370,17 +1381,18 @@ Function PrintSADPhishesVars {
 	Write-Host FromHeaderMatches [$script:FromHeaderMatches]
 	Write-Host LaunchEDiscoveryURL [$script:LaunchEDiscoveryURL]
 	Write-Host mailboxes [$script:mailboxes]
+	Write-Host MailboxesWithHitsCount [$script:MailboxesWithHitsCount]
 	Write-Host MailboxSearch [$script:MailboxSearch]
 	Write-Host MailboxSearches [$script:MailboxSearches]
-	Write-Host MailboxesWithHitsCount [$script:MailboxesWithHitsCount]
 	Write-Host MenuChoice [$script:MenuChoice]
 	Write-Host NoDeleteMenuChoice [$script:NoDeleteMenuChoice]
 	Write-Host PurgeName [$script:PurgeName]
 	Write-Host PurgeSuffix [$script:PurgeSuffix]
 	Write-Host SearchName [$script:SearchName]
 	Write-Host SearchType [$script:SearchType]
-	Write-Host Sender [$script:Sender]
 	Write-Host SelectedComplianceSearch [$script:SelectedComplianceSearch]
+	Write-Host SelectedEDiscoverySearch [$Script:SelectedEDiscoverySearch]
+	Write-Host Sender [$script:Sender]
 	Write-Host Subject [$script:Subject]
 	Write-Host SubjectHeaderMatches [$script:SubjectHeaderMatches]
 	Write-Host ThisComplianceSearchRun [$Script:ThisComplianceSearchRun]
@@ -1397,18 +1409,6 @@ Function PrintSADPhishesVars {
 	Write-Host UseDateFromHeaderFile [$Script:UseDateFromHeaderFile]
 	Write-Host UseSenderFromHeaderFile [$script:UseSenderFromHeaderFile]
 	Write-Host UseSubjectFromHeaderFile [$script:UseSubjectFromHeaderFile]
-	Write-Host DateFromHeader [$script:DateFromHeader]
-	Write-Host DateFromHeaderDayOfWeek [$script:DateFromHeaderDayOfWeek]
-	Write-Host DateFromHeaderDayOfMonth [$script:DateFromHeaderDayOfMonth]
-	Write-Host DateFromHeaderMonth [$script:DateFromHeaderMonth]
-	Write-Host DateFromHeaderYear [$script:DateFromHeaderYear]
-	Write-Host DateFromHeaderMonthNum [$Script:DateFromHeaderMonthNum]
-	Write-Host DateFromHeaderFormatted [$Script:DateFromHeaderFormatted]
-	Write-Host EDiscoverySearches [$script:EDiscoverySearches]
-	Write-Host EDiscoverySearch [$script:EDiscoverySearch]
-	Write-Host EDiscoverySearchNumberSelection [$Script:EDiscoverySearchNumberSelection]
-	Write-Host SelectedEDiscoverySearch [$Script:SelectedEDiscoverySearch]
-	Write-Host EDiscoverySearchName [$script:EDiscoverySearchName]
 }
 
 #Drop the user into the DisplayBanner function (and then Search Type Menu) to begin the process.
