@@ -6,6 +6,8 @@ BitLocker-Logging.ps1 is a quick tool to write BitLocker Status to a log file
 SADPhishes.ps1 is a tool I'm working on to use Exchange 2016's Compliance Search to delete emails that have been identified as phishing
 
 
+# SADPhishes.ps1 Flowchart
+![SADPhishesFlowchart](/SADPhishes%20Screenshots/SADPhishesFlowchart.jpg)
 
 # SADPhishes.ps1 Basic Usage Screenshots
 These screenshots are from the initial release.  A bunch has changed, but they still give you a general idea of how this works.
