@@ -1087,7 +1087,7 @@ Function ShowEDiscoverySearchMenu {
 							Write-Host "Management In-Place eDiscovery workflow to proceed with those actions."
 							Write-Host "You might want to do that to confirm if any of the items in this search are" -ForegroundColor Yellow
 							Write-Host "located in the Deleted Recoverable Items folder.  The PST export generates a " -ForegroundColor Yellow
-							Write-Host "CSV file with that information." ForegroundColor Yellow
+							Write-Host "CSV file with that information." -ForegroundColor Yellow
 							Write-Host "==========================================================================="
 							Do {
 								$Script:LaunchEDiscoveryURL = Read-Host -Prompt "Would you like to open the Results URL using your default browser? [Y]es or [N]o"
