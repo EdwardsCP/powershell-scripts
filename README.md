@@ -28,6 +28,7 @@ The screenshots below show an example of a workflow that can be taken through th
 
 ...the user was returned to the top level Search Options Menu
 
+You can see in the screenshots that there is additional functionality not shown in this example.  You can create and execute new Compliance Searches based on fewer criteria.  You can run a Pre-Built Suspicious Attachment Types Search (that looks for attachments with 39 different suspicious file extensions, like .jar, .vbs, .bat, etc).  You can supply SADPhishes with a text file that contains headers from a sample email, and it will attempt to parse the Sender, Subject, and Date from the headers in order to automatically build a query.
 
 ![SADPhishes1](/SADPhishes%20Screenshots/SADPhishes1.png)
 
