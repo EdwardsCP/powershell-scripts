@@ -7,7 +7,7 @@ SADPhishes.ps1 is a tool I'm working on to use Exchange 2016's Compliance Search
 
 
 
-# SADPhishes.ps1 Basic Usage Screenshots
+# SADPhishes.ps1 Basic info and Usage Screenshots
 The screenshots below show an example of a workflow that can be taken through the SADPhishes script.  In this example...
 
 ...the user created a Compliance Search query using a Subject, Sender Address, and Date Range
@@ -26,7 +26,9 @@ The screenshots below show an example of a workflow that can be taken through th
 
 ...the user was returned to the top level Search Options Menu
 
-You can see in the screenshots that there is additional functionality not shown in this example.  You can create and execute new Compliance Searches based on fewer criteria.  You can run a Pre-Built Suspicious Attachment Types Search (that looks for attachments with 39 different suspicious file extensions, like .jar, .vbs, .bat, etc).  You can supply SADPhishes with a text file that contains headers from a sample email, and it will attempt to parse the Sender, Subject, and Date from the headers in order to automatically build a query.
+You can see in the screenshots that there is additional functionality not shown in this example.  You can create and execute new Compliance Searches based on fewer criteria.  You can run a Pre-Built Suspicious Attachment Types Search (that looks for attachments with 39 different suspicious file extensions, like .jar, .vbs, .bat, etc).  You can supply SADPhishes with a text file that contains headers from a sample email, and it will attempt to parse the Sender, Subject, and Date from the headers in order to automatically build a query.  You can view and re-run Compliance Searches that already exist.
+
+The SADPhishes tool doesn't really do anything that you couldn't do on your own by executing the right powershell commandlets, or even through the Exchange Administrative Center's GUI.  But it does (1) make it easy to very quickly execute a search based on whatever criteria you have identified, (2) enforce a standard naming convention for searches, and (3) provide warnings and reminders of the search functionality it is built on top of, and (4) provide useful feedback right in the powershell console instead of a user needing to click through multiple GUI screens in EAC.
 
 ![SADPhishes1](/SADPhishes%20Screenshots/SADPhishes1.png)
 
