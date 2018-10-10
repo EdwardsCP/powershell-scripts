@@ -19,3 +19,7 @@ These screenshots are from the initial release.  A bunch has changed, but they s
 ![SADPhishes3](/SADPhishes%20Screenshots/SADPhishes3.png)
 
 ![SADPhishes4](/SADPhishes%20Screenshots/SADPhishes4.png)
+
+![SADPhishes5](/SADPhishes%20Screenshots/SADPhishes5.png)
+
+![SADPhishes6](/SADPhishes%20Screenshots/SADPhishes6.png)
