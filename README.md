@@ -14,7 +14,7 @@ These screenshots are from the initial release.  A bunch has changed, but they s
 
 ![SADPhishes1](/SADPhishes%20Screenshots/SADPhishes1.png)
 
-![SADPhishes2](SADPhishes%20Screenshots/sadphishes2.png)
+![SADPhishes2](/SADPhishes%20Screenshots/SADPhishes2.png)
 
 ![SADPhishes3](/SADPhishes%20Screenshots/sadphishes3.png)
 
