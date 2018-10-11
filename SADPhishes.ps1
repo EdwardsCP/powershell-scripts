@@ -267,7 +267,7 @@ Function ParseEmailHeadersFile{
 	Foreach ($script:EmailHeadersLine in $script:EmailHeadersLines){
 		$Script:FromHeaderMatches = $script:EmailHeadersLine -match '^From:.*<(.*@.*)>$'
 		$Script:SubjectHeaderMatches = $script:EmailHeadersLine -match '^Subject: (.*)$'
-		$Script:DateHeaderMatches = $script:EmailHeadersLine -match '^Date: (([a-zA-Z][a-zA-Z][a-zA-Z]), (\d\d) ([a-zA-Z][a-zA-Z][a-zA-Z]) (\d\d\d\d).*)$'
+		$Script:DateHeaderMatches = $script:EmailHeadersLine -match '^Date: (([a-zA-Z][a-zA-Z][a-zA-Z]), (\d{1,2}) ([a-zA-Z][a-zA-Z][a-zA-Z]) (\d{4}).*)$'
 		If ($Script:FromHeaderMatches) {
 			$Script:Sender = $matches[1]
 			Write-Host "SADPhishes found this Sender Address..." -ForegroundColor Yellow
