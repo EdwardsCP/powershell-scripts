@@ -1,7 +1,7 @@
 # SADPhishes.ps1
 # Exchange 2016 Compliance Search & Destroy Phishing Emails
 # Colin Edwards / @EdwardsCP
-# September 2018
+# Development Started - September 2018
 #--------------------------------------------------
 # Prerequisites: Script must be run from Exchange Management Shell by a User with the Exchange Discovery Management Role
 #
@@ -14,6 +14,12 @@
 #
 # Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
 #
+#=================
+#Version 1.0.12
+# (shout out to Doug Metz for the feedback and these suggestions!)
+# Added a "Sender and Date Range" search option.
+# Added option to specify your own Search Name for your Compliance Search instead of having SADPhishes automatically create one based on your Search Criteria
+# Added option to set the Description for your Compliance Search
 #=================
 #Version 1.0.11
 # Modified the search that extracts info from a Headers text file so that it would detect UTF-8 encoded subjects and convert them to plain text for executing the search.
@@ -105,7 +111,7 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                             _________________________/ |  "
-	Write-Host "                                                            |@EdwardsCP v1.0.11 2018___/   "
+	Write-Host "                                                            |@EdwardsCP v1.0.12 2018___/   "
 	Write-Host "================================================================================================"
 	Start-Sleep -m 200
 	Write-Host "===============================================================" -ForegroundColor Yellow
@@ -140,9 +146,10 @@ Function SearchTypeOptions {
 	Write-Host "    [3] Subject and Sender Address"
 	Write-Host "    [4] Subject Only"
 	Write-Host "    [5] Sender Address Only (DANGEROUS)"
-	Write-Host "    [6] Attachment Name Only"
-	Write-Host "    [7] Pre-Built Suspicious Attachment Types Search"
-	Write-Host "    [8] Extract Subject and Sender Address from a text file containing EMail Headers"
+	Write-Host "    [6] Sender and Date Range"
+	Write-Host "    [7] Attachment Name Only"
+	Write-Host "    [8] Pre-Built Suspicious Attachment Types Search"
+	Write-Host "    [9] Extract Subject and Sender Address from a text file containing EMail Headers"
 	Write-Host " "
 	Write-Host "--- Execute Existing Searches ---"
 	Write-Host "    [10] View and Run an existing Compliance Search"
@@ -163,7 +170,7 @@ Function SearchTypeMenu{
 	Do {	
 		SearchTypeOptions
 		CreateSADPhishesNullVars
-		$script:SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1 - 8, 10, X, Y, Z, or Q) and press Enter'
+		$script:SearchType = Read-Host -Prompt 'Please enter a selection from the menu (1 - 10, X, Y, Z, or Q) and press Enter'
 		switch ($script:SearchType){
 			'1'{
 				$script:Subject = Read-Host -Prompt 'Please enter the exact Subject of the Email you would like to search for'
@@ -216,10 +223,19 @@ Function SearchTypeMenu{
 				until ($script:DangerousSearch -eq 'q')
 			}
 			'6'{
+				$script:Sender = Read-Host -Prompt 'Please enter the exact Sender (From:) address of the Email you would like to search for'
+				$script:DateStart = Read-Host -Prompt 'Please enter the Beginning Date for your Date Range in the form M/D/YYYY'
+				$script:DateEnd = Read-Host -Prompt 'Please enter the Ending Date for your Date Range in the form M/D/YYYY'
+				$script:DateRangeSeparator = ".."
+				$script:DateRange = $script:DateStart + $script:DateRangeSeparator + $script:DateEnd
+				$script:ContentMatchQuery = "(Received:$script:DateRange) AND (From:$script:Sender)"
+				AttachmentNameMenu			
+			}
+			'7'{
 				$script:AttachmentName = Read-Host -Prompt 'Please enter the exact File Name of the Attachment you want to search for (i.e. SADPhishes.ps1) and Press Enter'
 				ExchangeSearchLocationMenu
 			}
-			'7'{
+			'8'{
 				Write-Host "You have chosen to conduct the SADPhishes Pre-Built Suspicious Attachment Types Search." -ForegroundColor Yellow
 				Write-Host "This search will return a list of Mailboxes that contain Attachments with specific file extensions." -ForegroundColor Yellow
 				Write-Host "This search is a Search-Only option, with no Delete built into the SADPhishes Workflow." -ForegroundColor Yellow
@@ -228,7 +244,7 @@ Function SearchTypeMenu{
 				$script:ContentMatchQuery = "((Attachment:'.ade') OR (Attachment:'.adp') OR (Attachment:'.apk') OR (Attachment:'.bas') OR (Attachment:'.bat') OR (Attachment:'.chm') OR (Attachment:'.cmd') OR (Attachment:'.com') OR (Attachment:'.cpl') OR (Attachment:'.dll') OR (Attachment:'.exe') OR (Attachment:'.hta') OR (Attachment:'.inf') OR (Attachment:'.iqy') OR (Attachment:'.jar') OR (Attachment:'.js') OR (Attachment:'.jse') OR (Attachment:'.lnk') OR (Attachment:'.mht') OR (Attachment:'.msc') OR (Attachment:'.msi') OR (Attachment:'.msp') OR (Attachment:'.mst') OR (Attachment:'.ocx') OR (Attachment:'.pif') OR (Attachment:'.pl') OR (Attachment:'.ps1') OR (Attachment:'.reg') OR (Attachment:'.scr') OR (Attachment:'.sct') OR (Attachment:'.shs') OR (Attachment:'.slk') OR (Attachment:'.sys') OR (Attachment:'.vb') OR (Attachment:'.vbe') OR (Attachment:'.vbs') OR (Attachment:'.wsc') OR (Attachment:'.wsf') OR (Attachment:'.wsh'))"
 				ExchangeSearchLocationMenu
 			}
-			'8'{
+			'9'{
 				Write-Host "You have chosen to have SADPhishes open a Text file containing the Headers" -ForegroundColor Yellow
 				Write-Host "from a sample EMail.  Please select the text file to open in the dialog box" -ForegroundColor Yellow
 				Write-Host "that will open when you proceed." -ForegroundColor Yellow
@@ -490,11 +506,11 @@ Function ExchangeSearchLocationMenu {
 		switch ($script:ExchangeSearchLocation){
 			'1'{
 				$script:ExchangeLocation = "all"
-				ComplianceSearch
+				UserSetSeachNameMenu
 			}
 			'2'{
 				$script:ExchangeLocation = Read-Host -Prompt 'Please enter the EMail Address of the MailBox or Group you would like to search within'
-				ComplianceSearch
+				UserSetSeachNameMenu
 			}
 			'q'{
 				ClearSADPhishesVars
@@ -504,6 +520,76 @@ Function ExchangeSearchLocationMenu {
 	}
 	until ($script:SearchType -eq 'q')
 }
+
+#Function for UserSetSearchName Menu Options Display
+Function UserSetSearchNameOptions{
+	Write-Host ""
+	Write-Host "USER SPECIFIED SEARCH NAME MENU" -ForegroundColor Green
+	Write-Host "Do you want to specify your own name for this search?" -ForegroundColor Yellow
+	Write-Host "If you don't need to specify your own name, SADPhishes will automatically create a name based on the search criteria you have specified." -ForegroundColor Yellow
+	Write-Host "If you aren't sure what to choose, pick No so you can see how SADPhishes builds Search Names." -ForegroundColor Yellow
+	Write-Host "[1] No"
+	Write-Host "[2] Yes" 
+	Write-Host "[Q] Quit and Return to the Search Options Menu"
+}
+#Function to allow the user to specify their own Search Name
+Function UserSetSeachNameMenu {
+	Do {
+		UserSetSearchNameOptions
+		$Script:UserSetSearchNameChoice = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and press Enter'
+		switch ($Script:UserSetSearchNameChoice){
+			'1'{
+				AddDescriptionMenu
+			}
+			'2'{
+				$Script:SearchName = Read-Host -Prompt 'Please enter a Name for this search'
+				AddDescriptionMenu
+			}
+			'q'{
+				ClearSADPhishesVars
+				SearchTypeMenu			
+			}
+		}
+	}
+	Until ($Script:UserSetSearchNameChoice -eq 'q')
+}
+
+
+#Function for AddDescription Menu Options Display
+Function AddDescriptionOptions {
+	Write-Host ""
+	Write-Host "ADD DESCRIPTION MENU" -ForegroundColor Green
+	Write-Host "Do you want to specify a Description for this search?" -ForegroundColor Yellow
+	Write-Host "You might want to this to add some additional details or Incident/Tracking #'s to the Search" -ForegroundColor Yellow
+	Write-Host "[1] No"
+	Write-Host "[2] Yes" 
+	Write-Host "[Q] Quit and Return to the Search Options Menu"
+}
+
+
+#Function to allow the user to specify a Description for their Compliance Search
+Function AddDescriptionMenu {
+	Do {
+		AddDescriptionOptions
+		$script:AddDescription = Read-Host -Prompt 'Please enter a selection from the menu (1, 2, or Q) and press Enter'
+		switch ($Script:AddDescription){
+			'1'{
+				ComplianceSearch
+			}
+			'2'{
+				$Script:SearchDescription = Read-Host -Prompt 'Please enter a Description for this search'
+				ComplianceSearch
+			}
+			'q'{
+				ClearSADPhishesVars
+				SearchTypeMenu			
+			}
+		}
+	}
+	until ($Script:AddDescription -eq 'q')
+}
+
+
 
 #Function to Re-Run a previous Compliance Search
 Function RunPreviousComplianceSearch {
@@ -581,49 +667,53 @@ Function RunPreviousComplianceSearch {
 Function ComplianceSearch {
 	# If SelectedComplianceSearch (used to re-run an existing search) is Null, go through the full process of creating a Searchname, Checking name length, notifying about subjects being wildcard searches, and creating the search.  Otherwise, bypass all that and get right to running the existing search.
 	If ($Script:SelectedComplianceSearch -eq $null){
-		#Set SearchName based on SearchType
-		switch ($script:SearchType){
-				'1'{
-					$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-				}
-				'2'{
-					$script:SearchName = "Remove Subject [$script:Subject] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-				}
-				'3'{
-					$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-				}
-				'4'{
-					$script:SearchName = "Remove Subject [$script:Subject] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-				}
-				'5'{
-					$script:SearchName = "Remove Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-				}
-				'6'{
-					$script:SearchName = "Remove Exchange Location [$script:ExchangeLocation] Phishing Message"
-				}
-				'7'{
-					$script:SearchName = "SADPhishes Pre-Built Suspicious Attachment Types Search Exchange Location [$script:ExchangeLocation]"
-				}
-				'8'{
-					$script:SearchName = "SADPhishes Headers Parsed Subject [$script:Subject] DateRange [$script:DateRange] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
-				}
-		}
-		#If an AttachmentName has been specified, Modify SearchName to include it.  
-		if ($script:AttachmentName -ne $null){
-			$script:SearchName = $script:SearchName + " with Attachment [" + $script:AttachmentName + "]"
-			# If a ContentMatchQuery is already set, modify $script:ContentMatchQuery to include the attachment.
-			If ($script:ContentMatchQuery -ne $null){
-			$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName') AND " + $script:ContentMatchQuery
+		#If UserSetSearchNameChoice is 1 (meaning the user didn't choose to set their own Search Name), Set SearchName based on SearchType
+		If ($Script:UserSetSearchNameChoice -eq '1'){
+			switch ($script:SearchType){
+					'1'{
+						$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+					}
+					'2'{
+						$script:SearchName = "Remove Subject [$script:Subject] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+					}
+					'3'{
+						$script:SearchName = "Remove Subject [$script:Subject] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+					}
+					'4'{
+						$script:SearchName = "Remove Subject [$script:Subject] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+					}
+					'5'{
+						$script:SearchName = "Remove Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+					}
+					'6'{
+						$script:SearchName = "Remove Sender [$script:Sender] DateRange [$script:DateRange] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+					}
+					'7'{
+						$script:SearchName = "Remove Exchange Location [$script:ExchangeLocation] Phishing Message"
+					}
+					'8'{
+						$script:SearchName = "SADPhishes Pre-Built Suspicious Attachment Types Search Exchange Location [$script:ExchangeLocation]"
+					}
+					'9'{
+						$script:SearchName = "SADPhishes Headers Parsed Subject [$script:Subject] DateRange [$script:DateRange] Sender [$script:Sender] ExchangeLocation [$script:ExchangeLocation] Phishing Message"
+					}
 			}
-			# If an AttachmentName has been specified, and a ContentMatchQuery is NOT already set, set the ContentMatchQuery.
-			If ($script:ContentMatchQuery -eq $null){
-			$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName')"
-			}
+			#If an AttachmentName has been specified, Modify SearchName to include it.  
+			if ($script:AttachmentName -ne $null){
+				$script:SearchName = $script:SearchName + " with Attachment [" + $script:AttachmentName + "]"
+				# If a ContentMatchQuery is already set, modify $script:ContentMatchQuery to include the attachment.
+				If ($script:ContentMatchQuery -ne $null){
+				$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName') AND " + $script:ContentMatchQuery
+				}
+				# If an AttachmentName has been specified, and a ContentMatchQuery is NOT already set, set the ContentMatchQuery.
+				If ($script:ContentMatchQuery -eq $null){
+				$script:ContentMatchQuery = "(Attachment:'$script:AttachmentName')"
+				}
+			}	
+			## Timestamp the SearchName (to make it unique), then Create and Execute a New Compliance Search based on the user set Variables
+			#$script:TimeStamp = Get-Date -Format o | foreach {$_ -replace ":", "."} #Timestamp for search name not used anymore, but leaving the var here for now.
+			#$script:SearchName = $script:SearchName + " " + $script:TimeStamp
 		}	
-		
-		## Timestamp the SearchName (to make it unique), then Create and Execute a New Compliance Search based on the user set Variables
-		#$script:TimeStamp = Get-Date -Format o | foreach {$_ -replace ":", "."} #Timestamp for search name not used anymore, but leaving the var here for now.
-		#$script:SearchName = $script:SearchName + " " + $script:TimeStamp
 		
 		# Name the Compliance Search using the Name that has been built using the search criteria, followed by an integer. To handle repeat searches of matching criteria, increase the integer until you hit a Search name that doesn't already exit.
 		$I = 1;
@@ -679,6 +769,10 @@ Function ComplianceSearch {
 		Write-Host "==========================================================================="
 		Write-Host "Creating a new Compliance Search with the name..."
 		Write-Host $script:SearchName -ForegroundColor Yellow
+		if ($script:AddDescription -eq '2') {
+			Write-Host "...with the description..."
+			Write-Host $Script:SearchDescription -ForegroundColor Yellow
+		}
 		Write-Host "...using the query..."
 		Write-Host $script:ContentMatchQuery -ForegroundColor Yellow
 		Write-Host "==========================================================================="
@@ -701,7 +795,14 @@ Function ComplianceSearch {
 			Read-Host -Prompt "Please press Enter after reading the warning above."
 		
 		}
-		New-ComplianceSearch -Name "$script:SearchName" -ExchangeLocation $script:ExchangeLocation -ContentMatchQuery $script:ContentMatchQuery
+		switch ($script:AddDescription) {
+			'1' {
+			New-ComplianceSearch -Name "$script:SearchName" -ExchangeLocation $script:ExchangeLocation -ContentMatchQuery $script:ContentMatchQuery
+			}
+			'2' {
+			New-ComplianceSearch -Name "$script:SearchName" -ExchangeLocation $script:ExchangeLocation -ContentMatchQuery $script:ContentMatchQuery -Description "$Script:SearchDescription"
+			}
+		}
 	}	
 	Start-ComplianceSearch -Identity "$script:SearchName"
 	Get-ComplianceSearch -Identity "$script:SearchName"
@@ -721,7 +822,7 @@ Function ComplianceSearch {
 	ThisSearchMailboxCount
 	Write-Host "==========================================================================="
 	#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-	if ($script:SearchType -match "7"){
+	if ($script:SearchType -match "8"){
 		Write-host "===================================================="  -ForegroundColor Red
 		Write-Host "Take the Search Results above and Investigate." -ForegroundColor Red
 		Write-host "===================================================="  -ForegroundColor Red
@@ -1125,7 +1226,7 @@ Function ShowEDiscoverySearchMenu {
 										Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
 										Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
 										#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-										if ($script:SearchType -match "7"){
+										if ($script:SearchType -match "8"){
 											ShowNoDeleteMenu
 										}
 										#If the search was any other type, show the regular Actions menu that allows Delete.
@@ -1133,7 +1234,7 @@ Function ShowEDiscoverySearchMenu {
 									}
 									'2'{
 										#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-										if ($script:SearchType -match "7"){
+										if ($script:SearchType -match "8"){
 											ShowNoDeleteMenu
 										}
 										#If the search was any other type, show the regular Actions menu that allows Delete.
@@ -1153,7 +1254,7 @@ Function ShowEDiscoverySearchMenu {
 				Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
 				Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
 				#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-				if ($script:SearchType -match "7"){
+				if ($script:SearchType -match "8"){
 					ShowNoDeleteMenu
 				}
 				#If the search was any other type, show the regular Actions menu that allows Delete.
@@ -1170,7 +1271,7 @@ Function ShowEDiscoverySearchMenu {
 				Write-Host "The eDiscovery Search has been deleted." -ForegroundColor Red
 				Read-Host -Prompt "Press Enter to return to the Compliance Search Actions Menu"
 				#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-				if ($script:SearchType -match "7"){
+				if ($script:SearchType -match "8"){
 					ShowNoDeleteMenu
 				}
 				#If the search was any other type, show the regular Actions menu that allows Delete.
@@ -1189,7 +1290,7 @@ Function ReturnToComplianceSearchActionsAfterEDiscoveryDone {
 	Write-Host "deleted." -ForegroundColor Yellow
 	Read-Host "Please review all of the information above then press Enter to return to the Compliance Search Actions Menu."
 	#If the search was a Pre-Built Suspicious Attachment Types Search, don't give the user the regular Actions menu that allows them to Delete.
-	if ($script:SearchType -match "7"){
+	if ($script:SearchType -match "8"){
 		ShowNoDeleteMenu
 	}
 	#If the search was any other type, show the regular Actions menu that allows Delete.
@@ -1209,6 +1310,7 @@ Function Get-FileName($initialDirectory){
 
 #Function to Create all SADPhishes Vars and set to Null
 Function CreateSADPhishesNullVars {
+	$script:AddDescription = $null
 	$script:AttachmentName = $null
 	$script:AttachmentNameSelection = $null
 	$Script:ComplianceSearch = $null
@@ -1252,6 +1354,7 @@ Function CreateSADPhishesNullVars {
 	$script:NoDeleteMenuChoice = $null
 	$script:PurgeName = $null
 	$script:PurgeSuffix = $null
+	$script:SearchDescription = $null
 	$script:SearchName = $null
 	$script:SearchType = $null
 	$Script:SelectedComplianceSearch = $null
@@ -1271,12 +1374,14 @@ Function CreateSADPhishesNullVars {
 	$script:ThisSearchResultsLines = $null
 	$script:TimeStamp = $null
 	$Script:UseDateFromHeaderFile = $null
+	$Script:UserSetSearchNameChoice = $null
 	$Script:UseSenderFromHeaderFile = $null
 	$Script:UseSubjectFromHeaderFile = $null
 }
 
 #Function to clear all of the Vars set by SADPhishes
 Function ClearSADPhishesVars {
+	Clear-Variable -Name AddDescription -Scope Script
 	Clear-Variable -Name AttachmentName -Scope Script
 	Clear-Variable -Name AttachmentNameSelection -Scope Script
 	Clear-Variable -Name ComplianceSearch -Scope Script
@@ -1320,6 +1425,7 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name NoDeleteMenuChoice -Scope Script
 	Clear-Variable -Name PurgeName -Scope Script
 	Clear-Variable -Name PurgeSuffix -Scope Script
+	Clear-Variable -Name SearchDescription -Scope Script
 	Clear-Variable -Name SearchName -Scope Script
 	Clear-Variable -Name SearchType -Scope Script
 	Clear-Variable -Name SelectedComplianceSearch -Scope Script
@@ -1339,12 +1445,14 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name ThisSearchResultsLines -Scope Script
 	Clear-Variable -Name TimeStamp -Scope Script
 	Clear-Variable -Name UseDateFromHeaderFile -Scope Script
+	Clear-Variable -Name UserSetSearchNameChoice -Scope Script
 	Clear-Variable -Name UseSenderFromHeaderFile -Scope Script
 	Clear-Variable -Name UseSubjectFromHeaderFile -Scope Script
 }
 
 #Function to print all SADPhishes Vars
 Function PrintSADPhishesVars {
+	Write-Host AddDescription [$script:AddDescription]
 	Write-Host AttachmentName [$script:AttachmentName]
 	Write-Host AttachmentNameSelection [$script:AttachmentNameSelection]
 	Write-Host ComplianceSearch [$script:ComplianceSearch]
@@ -1388,6 +1496,7 @@ Function PrintSADPhishesVars {
 	Write-Host NoDeleteMenuChoice [$script:NoDeleteMenuChoice]
 	Write-Host PurgeName [$script:PurgeName]
 	Write-Host PurgeSuffix [$script:PurgeSuffix]
+	Write-Host SearchDescription [$script:SearchDescription]
 	Write-Host SearchName [$script:SearchName]
 	Write-Host SearchType [$script:SearchType]
 	Write-Host SelectedComplianceSearch [$script:SelectedComplianceSearch]
@@ -1407,6 +1516,7 @@ Function PrintSADPhishesVars {
 	Write-Host ThisSearchResultsLines [$script:ThisSearchResultsLines]
 	Write-Host TimeStamp [$script:TimeStamp]
 	Write-Host UseDateFromHeaderFile [$Script:UseDateFromHeaderFile]
+	Write-Host UserSetSearchNameChoice [$Script:UserSetSearchNameChoice]
 	Write-Host UseSenderFromHeaderFile [$script:UseSenderFromHeaderFile]
 	Write-Host UseSubjectFromHeaderFile [$script:UseSubjectFromHeaderFile]
 }
