@@ -720,7 +720,7 @@ Function ComplianceSearch {
 		$Script:ComplianceSearches = Get-ComplianceSearch;
 			while ($true){
 				$found = $false
-				$script:ThisComplianceSearchRun = "$script:SearchName$I"
+				$script:ThisComplianceSearchRun = "$script:SearchName-$I"
 				foreach ($Script:ComplianceSearch in $Script:ComplianceSearches){
 					if ($Script:ComplianceSearch.Name -eq $Script:ThisComplianceSearchRun){
 						$found = $true;
@@ -732,7 +732,7 @@ Function ComplianceSearch {
 				}
 				$I++;
 			}
-		$Script:SearchName = "$Script:SearchName$I"
+		$Script:SearchName = "$Script:SearchName-$I"
 		# If the Compliance SearchName is >200 characters, prompt the user to supply a new SearchName, then append an Integer. To handle repeat searches with the same user-defined name, increase the integer until you hit a Search name that doesn't already exist.
 		Do {
 			If ($Script:SearchName.length -gt 200) {
@@ -750,7 +750,7 @@ Function ComplianceSearch {
 				$Script:ComplianceSearches = Get-ComplianceSearch;
 					while ($true){
 						$found = $false
-						$script:ThisComplianceSearchRun = "$script:SearchName$I"
+						$script:ThisComplianceSearchRun = "$script:SearchName-$I"
 						foreach ($Script:ComplianceSearch in $Script:ComplianceSearches){
 							if ($Script:ComplianceSearch.Name -eq $Script:ThisComplianceSearchRun){
 								$found = $true;
@@ -762,7 +762,7 @@ Function ComplianceSearch {
 						}
 						$I++;
 					}
-				$Script:SearchName = "$Script:SearchName$I"
+				$Script:SearchName = "$Script:SearchName-$I"
 			}
 		}
 		Until ($Script:SearchName.length -le 200)
@@ -1085,7 +1085,7 @@ Function ShowNoDeleteMenu{
 	$script:MailboxSearches = Get-MailboxSearch;
 		while ($true){
 			$found = $false
-			$script:ThisEDiscoverySearchRun = "$script:EDiscoverySearchName$I"
+			$script:ThisEDiscoverySearchRun = "$script:EDiscoverySearchName-$I"
 			foreach ($script:MailboxSearch in $script:MailboxSearches){
 				if ($script:MailboxSearch.Name -eq $script:ThisEDiscoverySearchRun){
 					$found = $true;
@@ -1097,7 +1097,7 @@ Function ShowNoDeleteMenu{
 		}
 		$I++;
 		}
-	$script:ThisEDiscoverySearchName = "$script:EDiscoverySearchName$i"
+	$script:ThisEDiscoverySearchName = "$script:EDiscoverySearchName-$i"
 	Write-Host "==========================================================================="
 	Write-Host "Creating a new In-Place eDiscovery Search with the name..."
 	Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
