@@ -5,7 +5,7 @@ BitLocker-Logging.ps1 is a quick tool to write BitLocker Status to a log file
 
 SADPhishes.ps1 is a tool I'm working on to use Exchange 2016's Compliance Search to delete emails that have been identified as phishing
 
-
+ShortURLChecker.ps1 is a tool for determining where a shortened URL (i.e. bit.ly, t.co, etc.) redirects to.
 
 # SADPhishes.ps1 Basic info and Usage Screenshots
 The screenshots below show an example of a workflow that can be taken through the SADPhishes script.  In this example...
