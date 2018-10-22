@@ -35,7 +35,7 @@ Do {
 	If ($Script:LongURLLocation -ne $Script:LongURL){
 		Write-Host "===========================" -ForegroundColor Yellow
 		Write-Host "Finding the next redirect..." -ForegroundColor Yellow
-		$CheckURL = $LongURL
+		$Script:ShortURL = $Script:LongURL
 		}
 }
 Until ($Script:LongURLLocation -eq $script:LongURL)
