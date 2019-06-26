@@ -1,73 +1,76 @@
-# SADPhishes.ps1
-# Exchange 2016 Compliance Search & Destroy Phishing Emails
-# Colin Edwards / @EdwardsCP
-# Development Started - September 2018
-#--------------------------------------------------
-# Prerequisites: Script must be run from Exchange Management Shell by a User with the Exchange Discovery Management Role
-#
-# Basic Usage: 	Execute the script from within EMS
-#			The user is prompted to search using various combinations of the Subject, Sender Address, Date Range, and Attachment Names.
-#			The user selects to search either All Exchange Locations, or specify the Email Address associated with a specific MailBox or Group
-#			The script will create and execute a Compliance Search.
-#			The user then has the option to view details of the search results, delete the Items found by the Search, create an eDiscovery Search or Delete the search and return to the mail search options menu.
-#
-#
-# Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
-#
-#=================
-#Version 1.0.12
-# (shout out to Doug Metz for the feedback and these suggestions!)
-# Added a "Sender and Date Range" search option.
-# Added option to specify your own Search Name for your Compliance Search instead of having SADPhishes automatically create one based on your Search Criteria
-# Added option to set the Description for your Compliance Search
-#=================
-#Version 1.0.11
-# Modified the search that extracts info from a Headers text file so that it would detect UTF-8 encoded subjects and convert them to plain text for executing the search.
-#=================
-#Version 1.0.10
-# Added the option to list all existing Compliance Searches and select one to re-run (RunPreviousComplianceSearch Function)
-#=================
-#Version 1.0.9
-# Bug Fixes - after eDiscovery search was run, needed to change the way the user is prompted about launching the results in the browser, and the workflow after that.
-#=================
-#Version 1.0.8
-# Fixed some bugs with the header text file search options
-#=================
-#Version 1.0.7
-# Reorganized the order of the functions in the script so it reads more easily top to bottom.
-# Added option to launch eDiscovery Search results preview in default browser.
-# Added search option to extract the Sender, Subject, and Date info from a text file containing Headers from a sample email
-# Other minor bug fixes
-#=================
-#Version 1.0.6
-# A ComplianceSearch Name can have a maximum of 200 Characters.  Changed the Search Name building process to use a unique integer at the end instead of a timestamp, so that it's less likely that we'll hit the 200 char limit. Then added some error trapping to prompt the user to specify a name if the one built automatically by SADPhishes was >200.  
-#=================
-#Version 1.0.5
-# Removed HasAttachment:True from ContentMatchQuery because it was causing eDiscovery Searches to fail
-# Changed all Variables set by SADPhishes from $VarName to $Script:VarName to fix variable cleanup when returning to the top menu after running a search.
-# Menu options back the user out to the main menu and clear out Vars from previous searches instead of requiring that they exit the script and re-run to run another search.
-# Added some debugging options to the main menu.
-# Other minor bug fixes
-#=================
-#Version 1.0.4
-# Added options to create an Exchange In-place eDiscovery Search from the Compliance Search results.
-# The option to execute the eDiscovery search is completely experimental. It knocked Exchange offline during testing. Not recommended in Prod.
-#=================
-#Version 1.0.3
-# Added AttachmentNameOptions and AttachmentNameMenu functions to search for emails with a specific Attachment name. 
-# Added an option for Attachment Name to the workflow of all searches
-# Added an Attachment Name Only search option.
-# Added an option for a Pre-Built Suspicious Attachment Types Search, and new functions in that workflow that don't allow for delete. This is for info-gathering only.
-#=================
-# Version 1.0.2
-# Modified ComplianceSearch function to add a TimeStamp to SearchName to make it unique if an identical search is re-run.
-# Modified ThisSearchMailboxCount function to display a warning if the Compliance search returns 500 source mailboxes.
-#=================
-# Version 1.0.1
-# Added ThisSearchMailboxCount function to display the number of mailboxes and a list of email addresses with Compliance Search Hits
-# Added ExchangeSearchLocationOptions and ExchangeSearchLocationMenu functions so the user can choose to search all Exchange Locations, or limit the search targets based on the Email Address associated with a Mailbox, Distribution Group, or Mail-Enabled Security Group
-#=================
+<#
+ SADPhishes.ps1
+ Exchange 2016 Compliance Search & Destroy Phishing Emails
+ Colin Edwards / @EdwardsCP
+ Development Started - September 2018
+--------------------------------------------------
+ Prerequisites: Script must be run from Exchange Management Shell by a User with the Exchange Discovery Management Role
 
+ Basic Usage: 	Execute the script from within EMS
+			The user is prompted to search using various combinations of the Subject, Sender Address, Date Range, and Attachment Names.
+			The user selects to search either All Exchange Locations, or specify the Email Address associated with a specific MailBox or Group
+			The script will create and execute a Compliance Search.
+			The user then has the option to view details of the search results, delete the Items found by the Search, create an eDiscovery Search or Delete the search and return to the mail search options menu.
+
+
+ Microsoft's docs say that a Compliance Search will return a max of 500 source mailboxes, and if there are more than 500 mailboxes that contain content that matches the query, the top 500 with the most search results are included in the results.  This means large environments may need to re-run searches.  Look for a future version of this script to be able to loop back through and perform another search if 500 results are returned and then deleted.
+=================
+Version 1.0.15
+ Fixed a bug in the RunPreviousComplianceSearch function due to a variable being a string instead of an integer, and the -le and -ge operators not working correctly because of it.
+=================
+Version 1.0.12
+ (shout out to Doug Metz for the feedback and these suggestions!)
+ Added a "Sender and Date Range" search option.
+ Added option to specify your own Search Name for your Compliance Search instead of having SADPhishes automatically create one based on your Search Criteria
+ Added option to set the Description for your Compliance Search
+=================
+Version 1.0.11
+ Modified the search that extracts info from a Headers text file so that it would detect UTF-8 encoded subjects and convert them to plain text for executing the search.
+=================
+Version 1.0.10
+ Added the option to list all existing Compliance Searches and select one to re-run (RunPreviousComplianceSearch Function)
+=================
+Version 1.0.9
+ Bug Fixes - after eDiscovery search was run, needed to change the way the user is prompted about launching the results in the browser, and the workflow after that.
+=================
+Version 1.0.8
+ Fixed some bugs with the header text file search options
+=================
+Version 1.0.7
+ Reorganized the order of the functions in the script so it reads more easily top to bottom.
+ Added option to launch eDiscovery Search results preview in default browser.
+ Added search option to extract the Sender, Subject, and Date info from a text file containing Headers from a sample email
+ Other minor bug fixes
+=================
+Version 1.0.6
+ A ComplianceSearch Name can have a maximum of 200 Characters.  Changed the Search Name building process to use a unique integer at the end instead of a timestamp, so that it's less likely that we'll hit the 200 char limit. Then added some error trapping to prompt the user to specify a name if the one built automatically by SADPhishes was >200.  
+=================
+Version 1.0.5
+ Removed HasAttachment:True from ContentMatchQuery because it was causing eDiscovery Searches to fail
+ Changed all Variables set by SADPhishes from $VarName to $Script:VarName to fix variable cleanup when returning to the top menu after running a search.
+ Menu options back the user out to the main menu and clear out Vars from previous searches instead of requiring that they exit the script and re-run to run another search.
+ Added some debugging options to the main menu.
+ Other minor bug fixes
+=================
+Version 1.0.4
+ Added options to create an Exchange In-place eDiscovery Search from the Compliance Search results.
+ The option to execute the eDiscovery search is completely experimental. It knocked Exchange offline during testing. Not recommended in Prod.
+=================
+Version 1.0.3
+ Added AttachmentNameOptions and AttachmentNameMenu functions to search for emails with a specific Attachment name. 
+ Added an option for Attachment Name to the workflow of all searches
+ Added an Attachment Name Only search option.
+ Added an option for a Pre-Built Suspicious Attachment Types Search, and new functions in that workflow that don't allow for delete. This is for info-gathering only.
+=================
+ Version 1.0.2
+ Modified ComplianceSearch function to add a TimeStamp to SearchName to make it unique if an identical search is re-run.
+ Modified ThisSearchMailboxCount function to display a warning if the Compliance search returns 500 source mailboxes.
+=================
+ Version 1.0.1
+ Added ThisSearchMailboxCount function to display the number of mailboxes and a list of email addresses with Compliance Search Hits
+ Added ExchangeSearchLocationOptions and ExchangeSearchLocationMenu functions so the user can choose to search all Exchange Locations, or limit the search targets based on the Email Address associated with a Mailbox, Distribution Group, or Mail-Enabled Security Group
+=================
+#>
 
 
 
@@ -111,7 +114,7 @@ Function DisplayBanner {
 	Write-Host "  ____) |  __/ (_| | | | (__| | | |    | (_>  <    | |__| |  __/\__ \ |_| | | (_) | |_| |  "
 	Write-Host " |_____/ \___|\__,_|_|  \___|_| |_|     \___/\/    |_____/ \___||___/\__|_|  \___/ \__, |  "
 	Write-Host "                                                             _________________________/ |  "
-	Write-Host "                                                            |@EdwardsCP v1.0.12 2018___/   "
+	Write-Host "                                                            |@EdwardsCP v1.0.15 2019___/   "
 	Write-Host "================================================================================================"
 	Start-Sleep -m 200
 	Write-Host "===============================================================" -ForegroundColor Yellow
@@ -611,10 +614,13 @@ Function RunPreviousComplianceSearch {
 		}
 	#after looking through all of the Compliance Searches in the array, decrease the Integer by 1 so that we can display the last used value in the instruction below.
 	$I--
+
 	Do {
 		$Script:ComplianceSearchNumberSelection = Read-Host -Prompt "Please enter a Search Number from the list above (1 - $I), and Press Enter to continue"
+        $Script:ComplianceSearchNumberSelectionInt = [int]$Script:ComplianceSearchNumberSelection
 	}
-	Until ($Script:ComplianceSearchNumberSelection -ge 1 -and $Script:ComplianceSearchNumberSelection -le $I)
+    
+	Until ($Script:ComplianceSearchNumberSelectionInt -ge 1 -and $Script:ComplianceSearchNumberSelectionInt -le $I)
 	#set up variables so our ComplianceSearch Function will run
 	$Script:SelectedComplianceSearch = $Script:ComplianceSearches | Where {$_.SearchNumber -eq $Script:ComplianceSearchNumberSelection}
 	$script:SearchName = $Script:SelectedComplianceSearch.Name
@@ -1085,7 +1091,7 @@ Function ShowNoDeleteMenu{
 	$script:MailboxSearches = Get-MailboxSearch;
 		while ($true){
 			$found = $false
-			$script:ThisEDiscoverySearchRun = "$script:EDiscoverySearchName-$I"
+			$script:ThisEDiscoverySearchRun = "$script:EDiscoverySearchName$I"
 			foreach ($script:MailboxSearch in $script:MailboxSearches){
 				if ($script:MailboxSearch.Name -eq $script:ThisEDiscoverySearchRun){
 					$found = $true;
@@ -1097,7 +1103,7 @@ Function ShowNoDeleteMenu{
 		}
 		$I++;
 		}
-	$script:ThisEDiscoverySearchName = "$script:EDiscoverySearchName-$i"
+	$script:ThisEDiscoverySearchName = "$script:EDiscoverySearchName$i"
 	Write-Host "==========================================================================="
 	Write-Host "Creating a new In-Place eDiscovery Search with the name..."
 	Write-Host "$script:ThisEDiscoverySearchName" -ForegroundColor Yellow
