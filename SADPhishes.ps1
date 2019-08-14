@@ -1322,6 +1322,7 @@ Function CreateSADPhishesNullVars {
 	$Script:ComplianceSearch = $null
 	$Script:ComplianceSearches = $null
 	$Script:ComplianceSearchNumberSelection = $null
+	$Script:ComplianceSearchNumberSelectionInt = $null
 	$script:ContentMatchQuery = $null
 	$script:DangerousEDiscoverySearch = $null
 	$script:DangerousEDiscoverySearchQuitChoice = $null
@@ -1393,6 +1394,7 @@ Function ClearSADPhishesVars {
 	Clear-Variable -Name ComplianceSearch -Scope Script
 	Clear-Variable -Name ComplianceSearches -Scope Script
 	Clear-Variable -Name ComplianceSearchNumberSelection -scope Script
+	Clear-Variable -Name ComplianceSearchNumberSelectionInt -scope Script
 	Clear-Variable -Name ContentMatchQuery -Scope Script
 	Clear-Variable -Name DangerousEDiscoverySearch -Scope Script
 	Clear-Variable -Name DangerousEDiscoverySearchQuitChoice -Scope Script
@@ -1464,6 +1466,7 @@ Function PrintSADPhishesVars {
 	Write-Host ComplianceSearch [$script:ComplianceSearch]
 	Write-Host ComplianceSearches [$script:ComplianceSearches]
 	Write-Host ComplianceSearchNumberSelection [$script:ComplianceSearchNumberSelection]
+	Write-Host ComplianceSearchNumberSelectionInt [$Script:ComplianceSearchNumberSelectionInt]
 	Write-Host ContentMatchQuery [$script:ContentMatchQuery]
 	Write-Host DangerousEDiscoverySearch [$script:DangerousEDiscoverySearch]
 	Write-Host DangerousEDiscoverySearchQuitChoice [$script:DangerousEDiscoverySearchQuitChoice]
